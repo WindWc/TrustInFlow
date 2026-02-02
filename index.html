@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trust In Flow - Integration & Up-Leveling Practices</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    /* Custom scrollbar for dark theme */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.1);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.3);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.5);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Brand Colors
+    const colors = {
+      teal: '#3582A9',
+      darkBlue: '#003366',
+      green: '#9BBB59',
+      orange: '#f19232',
+      lightGrey: '#999999',
+      darkGrey: '#333333',
+      white: '#FFFFFF',
+      offWhite: '#FAFAFA',
+      border: '#E5E5E5',
+    };
+
+    // Font families
+    const fonts = {
+      heading: '"Hoefler Text", Georgia, "Times New Roman", serif',
+      body: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+    };
+
+    const practices = [
+      { id: 'p1', title: 'Embrace Your Authentic & Higher Self', subtitle: 'Connect with your Soul\'s Journey', content: '• As creatures of "free will", we are in Choice. We get to choose to connect with our Higher Nature, our Authentic/Higher Self, with the Divine/Source.\n\n• When we relate from the Authentic/Higher Self, this puts us on track to engage with our Selves, with Others, our Land, our Projects, and with All of Life from this highly aligned place.\n\n• When we do so, All of Creation and reality shifts to realign with this intention and commitment.\n\n• The Universe conspires on our behalf. People, teammates, opportunities, resources & realities become Possible that were not possible before.\n\n• For every ½ step we take, the Universe takes 1,000 to meet us. So have courage, trust, lean in, LEAP!\n\n• There are principles, practices, tools, and resources that assist us in connecting with the Divine & with Right Relationship/Flow within ourselves, others, Land, projects, and All of Life.\n\nIt is up to You to choose them and use them!' },
+      { id: 'p2', title: 'Practice Being in "Ayni" / Right Relationship / Flow', subtitle: 'Create grace, ease, harmony & Flow', content: '• Coming into "Ayni"/Right Relationship creates Flow (this tends to be true, regardless of what is going on).\n\n• Coming into Ayni/Right Relation is a remarkably swift, powerful, and instantaneous way of stepping into grace, ease, harmony, thriving, prosperity, flow, integrity, and alignment.\n\n• It\'s also a great way to Discover what is really True & Possible for You, your relationships, projects, business, community, land and more.\n\n• You\'ll know when you\'re in it, because you\'ll feel it. You\'ll just Know. Things will resonate. They\'ll land. They\'ll "feel right". (See handout on Right Relationship Q & A for more details)\n\n• It IS the Flow state. It\'s the essence of living and creating from the Authentic & Higher Self/True Nature.\n\n• There are many ways to do this. Some ways will come naturally. Some you can learn. Some are pure grace.\n\n• It happens more easily when stepping out of the Conditioned & Survival self, and when unlearning old (conditioned) ways of seeing, perceiving, communicating, and engaging in life.\n\nWillingness is Key.\n\n• Coming into Right Relationship/Flow IS what shifts struggle, hard work, scarcity, separation, drama, conflict, illness, and loss into grace, ease, harmony, flow, Oneness, abundance, and more.' },
+      { id: 'p3', title: 'Levels of Engagement', subtitle: 'All things are Energy & Intention before they are anything else', content: 'Remember: All things are Energy & Intention before they are anything else. So start there!\n\nLevel 1: Energetic/Spiritual — The Beginning of all Creation\n\nLevel 2: Heart/Soul — Where True Connection lives\n\nLevel 3: Relational/Right Relation — How We "Show Up" with Self, Situations, Others\n\nLevel 4: Mind/Emotion/Language/Beliefs — The thoughts, beliefs & emotions we hold. The Stories we tell.\n\nLevel 5: Physical/Body/Form/Finance/Action — The version of "Reality" that manifests into Form.\n\n• By the time something (a physical thing, a situation) comes into form, it has usually gone through these upper levels to get there.\n\n• To create more easeful & effective change, one must go 1-2 or more Levels UP to address the person, situation, issue, or resulting form.\n\n• To create or restore grace, ease, harmony, flow… work Opportunities, Needs, Issues, Conversation and Situations at the energetic first.' },
+      { id: 'p4', title: 'Open Sacred Space', subtitle: 'Actively Call on the Divine to Guide', content: '• Opening Sacred Space (or opening a space in Prayer) is an important way of actively Calling on the Divine.\n\n• Open Sacred Space to support client work; hold and guide any process; work closely with you; protect you, your space and your creations; work outside of & beyond limitations & conditions; and work across time, space & dimension.\n\n• Opening Sacred Space stabilizes the space within and around the person(s), situation(s) and creation(s).\n\n• Reminds us that we are not Alone. We have Sacred Helpers & a Celestial Team of Guides.\n\n• Reminds us that we are part of Something Greater. It is not up to us to "figure it out" on our own.\n\n• Supports alignment and the actualization of Potentials beyond limited human understanding.\n\nBe sure to open AND close Sacred Space. Closing sacred space is equally important.' },
+      { id: 'p5', title: 'Tap Into Essence', subtitle: 'Daily practice for Divine Connection', content: 'Tapping into Essence is an immediate & powerful way to support your direct connection to your own Divine Intelligence and Source energy.\n\nBenefits Include:\n\n• Immediately feeling more "tapped in", connected, light, free, clear and empowered\n• Increases Higher Self alignment and connection to the Divine (in self, a space, with others)\n• Positively shifts & up-levels your electromagnetic field\n• Positively influences what you attract & repel\n\nHOW:\n\n• Open Sacred Space\n• Close your eyes, Drop In and Breathe (Full Body Breath)\n• Once you\'ve established Full Body Breath, Tap into Essence (pure life-force energy/Divine Intelligence)\n• Breathe into Essence. Fill up on It. Let Essence inform every cell and all aspects of your Being. Savor It.\n• Allow all that is Not Essence (i.e. physical, mental, emotional, situation stress/heaviness or forms that don\'t serve) to fall away. Better yet, Blow any stress or heavy thoughts, sensations or emotions In A Stone!\n• Rest into Essence, be informed by It.\n• Be, create, manifest, attract, build, lead & serve from Essence.\n• This practice supports high level, aligned, and more stabilized creations & manifestations.\n\nIt may sound "Woo Woo", but try it! It Works!!' },
+      { id: 'p6', title: 'Blow It In A Stone', subtitle: 'Don\\\'t be a container for stress, struggle or pain', content: 'You Do Not have to be a container for stress, overwhelm, heaviness, pain, illness or dis-harmony (physical, mental, emotional, relational, energetic or otherwise).\n\n• You can offload stress, anxiety, deactivate imprints and release other heavy/dense energy, so that it doesn\'t have to live in the body.\n\n• You can let heavy/dense energy, thoughts and emotions live in a stone, match stick, leaf instead… which will decompose/transmute it.\n\n• Doing this practice often provides immediate relief and supports essential internal & external shifts.\n\n• It also helps to shift your internal state and upgrades your electromagnetic field (which affects your external field and what you attract & repel).\n\nNote: This powerful practice does not clear imprints, but it can deactivate them.\n\nHOW:\n\n• Find a stone, match stick, leaf or other natural object.\n• Close your eyes, Drop In, Notice where the dense/heavy energy resides in the body (or mind).\n• Breathe into the activated or uncomfortable areas of the body (or mind).\n• Using the breath & your focused Intention, inhale to collect up any activated, heavy, dense, constricted energy from that area of the body, and strongly exhale (from that area of the body) to move/blow it into the object.\n• Let heavy/dense/stressful energy live in the stone, leaf or match stick ~ Not in your body.\n\nTo take this practice to a whole new level: Get Curious. Be open & receptive to what comes through.\n\nFeel into the energy:\n\n1. Where is it held in the body (or mind)? (Collect up the energy on the breath… Move the energy… Blow)\n2. What are the primary emotions? (Feel them but don\'t keep them… Move the energy… Blow)\n3. Feel into the emotions… Are there any thoughts, beliefs, stories, ideas associated with them? (Note them but don\'t hold them… Collect up the energy on the breath… Move the energy… Blow)\n4. Does the emotion/energy feel more masculine, feminine, mixed/blended, neutral? (Note it… Move the energy… Blow)\n5. Do any Images arise? (Note them but don\'t hold them… Move the energy… Blow)\n6. How "old" does the emotion/energy feel? (Feel into it… Move the energy… Blow)\n\n• After doing this Practice, you will likely feel much lighter, clearer, freer, relieved and able to focus again.\n\n• To clear the stone, leaf or match: Blow through it to return the energy to Source. OR burn the match or dry leaf to do the same. (Open Sacred Space first before doing any fire ceremony.)' },
+      { id: 'p7', title: 'Lean Into Discovering What Is Actually True & Possible', subtitle: 'Daily practice to create New Realities', content: 'After Imprint Clearings and Essence Illuminations, clients are often able to embody new ways of Being and Doing and to actualize potentials that they could not actualize before. Learning how to Lean Into Discovering What Is Actually True & Possible is an essential practice for Conscious Creation.\n\nTo create new possibilities, manifest new realities, make quantum leaps (that may defy logic), and live as a Conscious Creator, one must step beyond habitual thoughts, beliefs, choices, actions and strategies.\n\nRather than turning to the comfort of the known—familiar patterns, beliefs, habits, communication styles, and strategies—this practice invites you to turn toward and lean into:\n\n• the Unknown\n• the New\n• the Unfamiliar\n• "The Gap"\n• the Quantum Field\n• the Miracles of Potentiality\n\n…to discover what is actually True & Possible.\n\nNote: The mind and ego often resist this. Hard. Do It Anyway.\n\nHOW:\n\n• Each morning, remember what you would most love to Discover Is Actually True & Possible and Truly Awesome. (Refer to your True & Possible Session Notes, journal, or Muscle Test report.)\n\n• You may wish to drop into Essence before beginning.\n\n• If resistance arises, you may want to Blow It In A Stone.\n\n• Physically stand up, take a deep breath, turn toward and lean into your True & Possibles, Truly Awesomes, and positive Intentions.\n\n• Continue physically leaning into these Intentions to embody the energy and attune your body and mind to new feelings.\n\n• You do not need to know How these potentials will be actualized. Quiet the thinking mind and Ask to Be Shown by the Divine/Source/Spirit what is True & Possible and how to proceed.\n\n• Witness the uplift in energy, the sense of freedom, and the momentum that emerges. Breathe into it.\n\n• Consciously choose aligned thoughts, beliefs, communications, choices, and actions that move you toward your True & Possibles and New Potentials.\n\n• If mental or emotional resistance arises—skepticism, doubt, fear, conditioning, old stories, or the urge to "go back"—simply acknowledge it. Do not get hooked. Keep leaning in.\n\n• Let what surfaces serve as contrast, clarifying what you Do want. Turn again toward Discovering What Is Actually True & Possible.\n\n• Next: Take Aligned Action toward your True & Possibles and Truly Awesomes.\n\n• Remember: For every half-step of willingness and faith you take, the Universe/Divine will take 1,000 steps to meet you.\n\n• Acknowledge evidence of the shift. Offer Gratitude. Celebrate progress.\n\n• Be gentle and compassionate with yourself (and others) if you slip. It happens. Just take a breath—and lean in again.' },
+      { id: 'p8', title: 'Open A Sand Painting', subtitle: 'A Conscious Creator\'s power tool', content: 'Opening a Sand Painting is an essential Conscious Creators "power tool", as it can work multiple topics on multiple levels simultaneously. Sand Paintings create a Sacred Space or "Container" to hold the energy of something you\'re processing, clearing, manifesting and/or creating.\n\n• It\'s a Conscious Creation tool that helps one to manifest aligned opportunities & resources, process situations, clarify thoughts, work with emotional energy, clear "stuck" energy, and more.\n\n• It helps to bring or create "Ayni"/Right Relationship in multiple areas of life swiftly & simultaneously. And that sets grace, ease, harmony, flow, and positive ripple effects in motion.\n\n• It\'s a Healing tool. For physical, mental, or emotional pain (and other forms of "disease"), it provides a holding container that transforms heavy energy, rather than it stagnating in or affecting one\'s mind or body.\n\n• It supports Inner Work. Instead of "talking"/"processing"/"struggling" with others about emotions, triggers, and challenges (a Western obsession), it allows one to do one\'s inner work and move/clear/heal/deactivate things energetically before engaging another person in the process.\n\n• Remember: Activated emotions & triggers are usually much less about the other person or situation and are much more about one\'s own pre-existing "imprints" that are getting activated.\n\n• It supports Conscious Creation activities by bringing greater clarity, alignment, and flow into the process and identifying, clearing and/or shifting mis-alignment.\n\n• It helps catch and address issues, challenges, patterns, and imprints Early On... before they take on form, have an impact or create mis-alignment costs.\n\n• and more…\n\nSee "Sand Painting Instructions" for How to do this process.\n\nNote: Sand Paintings can remain open for up to 5 days, but must be actively "worked" and closed when complete.' },
+      { id: 'p9', title: 'Conscious Communication', subtitle: 'Work with Feelings & Needs/Values to create Aligned Approaches', content: 'To create true harmony (internally & externally), communicate more consciously & effectively, efficiently identify aligned approaches, and to manifest more aligned people, opportunities and resources that better meet the Needs & Values of All…\n\nRemember:\n\n• Feelings (light/positive & heavy/negative) point to Needs & Values (met or unmet)\n\n• Activated, strong or "triggered" Feelings point to activated Imprints, not to Truth\n\n• Remember: Feelings are not explanations or Stories! Feelings are 1 word (happy, sad, excited, etc).\n\n• "Feels like…" is not a Feeling! It usually means a Story or Interpretation is coming, not a Feeling. Gently catch it (in yourself) and reframe.\n\n• Identify Feelings but don\'t get fixated on or hooked into them. Locate them in the body (Use "Blow It In A Stone" practice). Use Feelings to identify Needs & Values (yours and others\')\n\n• Practice differentiating between Feelings > Needs/Values > "Stories"/Explanations/Justification > Old Strategies (that come at a Cost) vs Aligned Approaches\n\n• When you can clearly & accurately identify Needs & Values, you can more easily call on the Divine to help manifest the best and most Aligned Approaches & Resources to meet those Needs & Values\n\n• Remember: Spirit/The Divine will deliver. You & others will almost always be invited & required to grow.\n\nTo learn more, read Non-Violent Communication by Marshall Rosenberg\n\nNote: Rosenberg uses "strategies". We take these teachings, tools, and practices to whole new levels. Because of their impact, we differentiate "Strategies" (that come at a Cost) from "Authentic Approaches" (that set positive ripple effects in motion).' },
+      { id: 'p10', title: 'Take Aligned Action ~ Conscious Engagement', subtitle: 'Conscious Engagement in 6 Steps', content: 'Step 1: Start with Consciousness\n\nWhen opportunities, needs, issues, or situations arise, Remember:\n\n• Consciousness & Connection come first. Connection to your Authentic/Higher Self, Essence, and the Divine precedes action. Aligned Action follows. This is the foundation of Conscious Engagement.\n\n• Take your thoughts and actions to the energetic/spiritual level first:\n  ○ Connect with Essence, Source, or your Higher/Internal Team\n  ○ Open Sacred Space\n  ○ Blow heavy or activated energy into a stone\n  ○ Be mindful of Mis-Giving. Let your giving be inspiring and empowering\n  ○ Open a Sand Painting as a conscious creation, alignment, and transmutation tool\n  ○ Do ceremony (Fire Ceremony, Despacho, blessing, releasing, manifesting)\n  ○ Do not get hooked by Story, struggle, drama, conflict or the thinking/worrying mind\n  ○ Use emotions & feelings to identify Needs & Values\n  ○ Energetically step out of potential struggle or drama early (without avoiding)\n  ○ Receive session work as needed to track, clear, and illuminate imprints or heavy energy\n\nStep 2: Do Not Lead with the Mind\n\nIf something feels charged—or you feel the urge to figure it out, fix it, avoid it, force it, mentally process it with others, or engage in drama dynamics:\n\nPause. Do not talk about it or try to process it with others or figure it out mentally.\n\n• Use energetic tools and practices first. (This helps to discharge imprint energy.)\n• Remember: To shift something, you must move 1–2 or more levels above it\n\nStep 3: Blow It in a Stone\n\nYou do not need to be a container or magnet for fear, worry, stress, drama, scarcity, illness, loss, or pain.\n\n• Notice where the emotion or sensation lives in the body\n• Receive the message, insight, or guidance\n• Blow the energy out of the body into a stone\n• Let the natural object hold and transform it\n\nStep 4: Shift Perspective, Beliefs & Language\n\nThis is key to redirecting attention and energy toward what you are creating.\n\n• Focus on what you love, want, and are saying YES to ~ especially a "Soul YES"\n• Frame language in the positive to manifest what you do want (e.g., "I experience robust health and freedom of movement," rather than "My back doesn\'t hurt anymore.")\n\nStep 5: Take Aligned Action\n\n• Take concrete action steps in the direction of what you love and desire\n• Watch how quickly reality reorganizes into higher, more aligned versions when you do\n\nStep 6: Accept the Invitation to Grow\n\nTo move from caterpillar to butterfly, from Survival or Conditioned Self to Authentic or Higher Self, from struggle and 3D paradigms to grace, ease, harmony, and 5D–9D living…you will be invited to grow and change.\n\n• Allow this to be your initiation into extraordinary new possibilities' },
+      { id: 'p11', title: 'Shift Your Perspective to Shift Reality', subtitle: 'How we See, Creates Reality', content: '• How we See, Creates… and creates ripple effects… positively or negatively. (Heisenberg "Observer Effect")\n\n• So take Full Responsibility for how you choose to See, Hold & Relate things… regardless of what is going on around you.\n\nThis is a Game Changer.\n\n• How we see, hold and talk about people, situations & things HOLDS people, situations & things in that state (also "Heisenberg Observer Effect")\n\n• Practice "Seeing" The Opportunity, Gift, Invitation to Build Capacity, and the Presence of the Divine (especially in the midst of challenge, change and chaos.)\n\n• Rather than focusing on "Problems to Fix & Solve", "Burdens to Bear", "Challenges to Overcome" or projecting fear, worry & caution onto the Future based on Past Experience… Shift Perspective.\n\n• This takes practice, commitment, and self-mastery. So be patient with yourself, others, and the organic unfolding of your projects.\n\n• Do your shadow work, so you don\'t project your wounded stories, past experiences or imprints on others. Period.\n\nThis Is Essential.' },
+      { id: 'p12', title: 'Call In Support', subtitle: 'Get session Work for opportunities ... Before "Problems" Arise.', content: '• Be Proactive. Don\'t wait for "struggle", "problems", "challenges" or "difficulties" to arise before you shift, or Call In aligned support.\n\n• If you\'re wanting to make serious and sustainable break-throughs, get session work. Having facilitated support can make a world of difference, as it can empower you to catch & shift things early on.\n\n• Work with a conscious and aligned consultant, coach, facilitator of change, body worker, shamanic practitioner, business development specialist, etc, to help you Rock Your Creations!\n\n• Remember & Trust: When you say "YES", aligned Resources (people, opportunities, teachings, tools, practices, financial & non-financial forms of abundance and support) will show up "Out of the Blue". So pay attention. Then, Celebrate!\n\n• Make the Most of these Moments. And watch the Universe give you more!\n\nIf you want or need additional support, reach out. To an IHP or BIZ Practitioner or to Diana.\n\nFind out What Is Really True & Possible … for You, your Team, your Project, Business, Creation and Community.' }
+    ];
+
+    const clientContent = {
+      melanie: {
+        name: 'Melanie',
+        password: 'flowfree',
+        date: 'January 17-21, 2026',
+        practices: practices,
+        sections: [
+          { title: 'Family', items: ['I can love my family in an extraordinary way that is healing, enlightening, fulfilling, gratifying, whole and unifying — with light bonds, lots of light.', 'The ceiling is gone.', 'The blocks and boundaries are gone.'] },
+          { title: 'My Creativity', items: ['It can flow out of me easily, freely, and is in perfect flow as it emerges.', 'There\'s no hesitation, no blocks.', 'It serves as an expression of self and soul and the endless possibilities that can flow through me.', 'I can create without being selfish.', 'I can bless others while blessing myself.', 'I can bless others by creating in my own way and by opening my soul and expression.', 'It enables self-care and other-care at the same time in synchronicity and synchronization, in rhythm and harmony.', 'I\'m feeling a connection to many of the gifts and inspirations that have been waiting to come through me.', 'They are weightless, and yet so tremendous and so eternal.', 'They are who I was and who I will always be at my Essence.', 'Remember not to burden myself as I seek inspiration from above, especially when I encounter another person\'s opportunity to grow.', 'I feel free to live in that Essence, in my happy place, in that joyful place, even when in empathy and when caring for the well-being of others.', 'Both sides of my thinking feel freer.', 'I will hear more music.', 'I will see more color.', 'I will see and tap into old gifts and talents.'] },
+          { title: 'Brian', items: ['It is possible that we are eternal soul partners.', 'We can help each other to actualize our soul potential and creativity.', 'This feels like a second soul, a whole soul.', 'We amplify each other\'s wholeness.', 'Our resonance is like notes in a scale that play together.', 'We can partner on physical and real projects while navigating our sameness and difference.', 'Anything is possible now.', 'We can do anything, wholly and separately.', 'I believe in his capacity to navigate my big, powerful, beautiful, seeming chaos of creativity.'] },
+          { title: 'Jane', items: ['I see the brightness in her.', 'I want to help her find her brightest soul.', 'I can be a partner/parent in helping to manifest and reflect that to her — as a gift to her mother, as a gift from me as a woman.', 'She can spread her wings and fly in ways that will most fulfill her.', 'I can welcome her/allow her in my space so long as it is beneficial to her and to all, to the brightest and lightest solution and means to grow.', 'She will know when it\'s time to move on and how best to do it.'] },
+          { title: 'For Me', items: ['I can be a truly great mother in the incubation of ideas and planting of seeds, not only in projects, but in people and in their journey.', 'For the animals in my life too.', 'To reach the greatest potential I have in this life and to carry it on.', 'To do so in the ways that my Creator would have me do so.'] },
+          { title: 'Skyler and Hannah', items: ['To grow into my relationship with them.', 'To be needed, but in a healthy sense.', 'To be an influence for Light and Good.', 'He has managed to live his own life without these imprints and is becoming his brightest version of self.', 'This is true for my Grand Babies too.'] }
+        ]
+      },
+      brian: {
+        name: 'Brian',
+        password: 'pureflow',
+        date: 'January 17-21, 2026',
+        practices: practices,
+        sections: [
+          { title: 'Next Actions in Illuminated Self', items: ['To bring more of this energy to the creative space', 'To bring more of this energy to the heart'] },
+          { title: 'True & Possible', items: ['Self: My ability to achieve is limitless in ways that are beneficial to those around me and to oneself', 'Work: It is less dependent upon me and more dependent on what I offer others', 'Work: What I offer is enough', 'Family: As a father, I can sincerely connect with each of my children', 'Melanie: Your collective influence brought Joy not only to ourselves but to all around us and love to those who may be resistant to our love.', 'Melanie: Those who know us, see us and want us to succeed'] },
+          { title: 'Truly Awesome', items: ['Family: To be able to look at Angela and have her proud of my efforts to unify the family', 'Angela: Her genuine appreciation for all that Melanie and I are able to do', 'Melanie: To have pure flow, pure light, pure energy between us (no blocked energy or heaviness; we\'re able to rise above any resistance)'] }
+        ]
+      },
+      jackie: {
+        name: 'Jackie',
+        password: 'directflow',
+        date: 'January 2026',
+        practices: [
+          practices.find(p => p.id === 'p5'),
+          practices.find(p => p.id === 'p6'),
+          practices.find(p => p.id === 'p7'),
+          practices.find(p => p.id === 'p11'),
+          practices.find(p => p.id === 'p9'),
+          practices.find(p => p.id === 'p10'),
+          practices.find(p => p.id === 'p12'),
+        ],
+        sections: [
+          { title: 'Essence & Intentions (Origin stone)', items: ['To be able to recognize, acknowledge, understand and "conquer" triggers (aka Imprints) early on ... before projecting onto someone else'] },
+          { title: 'Yata (Leadership/Model of Possibility stone)', items: ['Healing can come from being direct', 'When I own my part and speak my feelings, it is not earth shattering; it creates positive growth', 'I can carry the learning & lessons forward into other situations', 'Truly Awesome: I can grow into being a Wise Old Lady'] },
+          { title: 'Nervous Energy (Essence stone)', items: ['Blow It In A Stone: I remember to use the stones (to blow physical, mental, emotional, relational, financial stress; the "thinking mind" or mind fog; fatigue, uncertainty, vulnerability, etc) into a Stone.', 'I have immediate access to the Divine (by Tapping Into Essence)'] },
+          { title: 'From Social Upheaval to Conscious Social Action (Shift Consciousness stone)', items: ['People know/remember they have more agency than they know', 'We have power to make changes while still staying true to our values & needs', 'There is a world-wide re-direction from tension into having clear thoughts & a clear path', 'Truly Awesome: This consciousness-shift that\'s coming Happens. Person by person. City by City.'] },
+          { title: 'From Ego Projection to Spiritual Connection (Spiritual Protection stone)', items: ['Love that child I was. Say Good-bye. Give her a hug. And move on.', 'Use my voice instead of my armor.', 'I have Tools. Use Them.', 'Truly Awesome: The Tools... They\'re all in my toolbox and are part of me now.', 'Truly Awesome: As a Result — Greater happiness, better relationships, more flow, and less stress in daily life.'] }
+        ]
+      },
+      arin: {
+        name: 'Arin',
+        password: 'peaceandease',
+        date: 'Jan 30, 2026',
+        practices: [
+          practices.find(p => p.id === 'p1'),
+          practices.find(p => p.id === 'p5'),
+          practices.find(p => p.id === 'p6'),
+          practices.find(p => p.id === 'p7'),
+          practices.find(p => p.id === 'p11'),
+          practices.find(p => p.id === 'p2'),
+          practices.find(p => p.id === 'p10'),
+          practices.find(p => p.id === 'p12'),
+        ],
+        sections: [
+          { title: 'Essence & Intentions (Spiritual Support/Spiritual Protection stone)', items: ['What\'s in All of the other Kuyas'] },
+          { title: 'Opportunity/Priority/Issue #1: The Moms (Bright Light Heart stone)', items: ['Peace: A sense of inner peace, okay-ness, internal rest, ease', 'Worthiness: Worthiness of love, life, fulfillment, purpose'] },
+          { title: 'Opportunity/Priority/Issue #2: The Masculine/Andy (Timeline stone)', items: ['To be able to find a harmonious, supportive, empowered and aligned sense of interconnection', 'I can mobilize my energy & focus to create something super fulfilling'] },
+          { title: 'Opportunity/Priority/Issue #3: Seed/Sprout (True Wealth stone)', items: ['I have a very clear, obvious sense of purpose and expression', 'I can Be a Model of Possibility for Akaia', 'My sense of purpose and expression are along side of Andy and we\'re doing it together', 'It\'s easeful and comes from within me', 'I can be in trust and flow'] },
+          { title: 'Opportunity/Priority/Issue #4: Patrilineal (Origin stone)', items: ['I can have an internal and external sense of sovereignty, safety and freedom', 'The energy can gather/I can gather the energy to move into a really aligned expression of purpose and connection in the world'] },
+          { title: 'Opportunity/Priority/Issue #5: The Truck (Shift in Perspective stone)', items: ['Symbolic of movement, freedom ability to build, multi-purpose way of getting a thing from point A to point B, energy being able to move', 'Consistent flow of movement', 'There is a supportive wind at our backs', 'We can find a shared way forward that is a "Soul YES" for both of Us'] }
+        ]
+      },
+      brianw: {
+        name: 'Brian W.',
+        password: 'crushingit',
+        date: 'Jan 28-29, 2026',
+        practices: [
+          practices.find(p => p.id === 'p1'),
+          practices.find(p => p.id === 'p5'),
+          practices.find(p => p.id === 'p6'),
+          practices.find(p => p.id === 'p7'),
+          practices.find(p => p.id === 'p11'),
+          practices.find(p => p.id === 'p2'),
+          practices.find(p => p.id === 'p8'),
+          practices.find(p => p.id === 'p10'),
+          practices.find(p => p.id === 'p12'),
+        ],
+        sections: [
+          { title: 'Essence & Intentions (Ayni stone)', items: ['Feels really good to create from this space', 'My projects can generate so much abundance to support all the people who have supported me, my projects and dreams', 'It elevates the land I love, the people I love, and those around us'] },
+          { title: 'Relational Patterns (Leadership/Model of Possibility stone)', items: ['I can co-exist in relationships (friendships & intimate) and be 100% open and honest without fear of consequence, guilt or shame', 'It\'s reciprocal. This is my Truth, Here I am, I\'ve got your back, Here we are.', 'I can attract those relationships in my life.', 'I feel completely open, honest and free without Mis-Giving to keep the relationship going', 'I am able to give freely without attachment or Mis-Giving'] },
+          { title: 'Repressed Truth (Shift in Consciousness stone)', items: ['I can say "No" when something is not aligned', 'I can speak Truth always', 'I can give from a place of abundance and joy', 'I live in Gratitude & Reciprocity always'] },
+          { title: 'Avoiding Abundance (Origin stone)', items: ['Management of said things (income, expenses, debt, tax prep/returns/filing, etc) can be easy, even fun (maybe gamify it!)', 'It can be completely handled by someone trusted and more expert than me', 'I can be an asset to them (not a liability)', 'I can easily resolve any pending debt or tax situation', 'I can bring myself into balance, harmony and flow with all things financial'] }
+        ]
+      }
+    };
+
+    const introContent = {
+      title: 'Integration & Up-Leveling Practices for Conscious Creators',
+      openingText: `As human beings — and especially as Transformational Leaders, Change Makers, Land Stewards, Project Developers, Human Potential Facilitators & Conscious Community Leaders — we are constantly creating.`,
+      text: `Purpose of Our Work:
+
+• To become more Conscious Creators (rather than Unconscious Creators)
+• To more fully access, embody, and relate from the Authentic/Higher Self (aka Essence/Divine Potential)
+• To work with what arises on the Journey from this place
+• To relate, live, serve, lead, give, and create at whole new levels — consciously and creatively
+• To cultivate greater capacities for creating thriving lives of grace, ease, harmony, flow, inspiration and right relationship — from the inside out and the outside in
+• To learn and apply transformational teachings, tools & practices in daily living, service & leadership
+• To create positive change (without engaging in unnecessary struggle, drama, conflict or loss in the process)
+• To more effortlessly and gracefully shed what we've outgrown, what comes at a cost, and what no longer serves — personally, professionally, financially, spiritually
+• To be more conscious service-leaders, professionals & Models of Possibility`
+    };
+
+    // Format content with rich typography
+    function FormattedContent({ text, darkMode = false }) {
+      const textColor = darkMode ? 'rgba(255,255,255,0.85)' : colors.darkGrey;
+      const headingColor = darkMode ? colors.white : colors.darkBlue;
+      const accentColor = colors.teal;
+
+      // Split into paragraphs
+      const paragraphs = text.split('\n\n');
+
+      return (
+        <div>
+          {paragraphs.map((para, i) => {
+            const trimmed = para.trim();
+
+            // Check if it's a section header (ends with colon or is short and capitalized)
+            const isHeader = (
+              (trimmed.endsWith(':') && trimmed.length < 60 && !trimmed.startsWith('•') && !trimmed.match(/^\d+\./)) ||
+              trimmed === 'Remember:' ||
+              trimmed === 'Important:' ||
+              trimmed.startsWith('How to Practice:') ||
+              trimmed.startsWith('What Sand Paintings Do:') ||
+              trimmed.startsWith('Opening Sacred Space:') ||
+              trimmed.startsWith('The Five Levels:') ||
+              trimmed.startsWith('Daily Practice:') ||
+              trimmed.startsWith('Practice "Seeing":') ||
+              trimmed.startsWith('Rather than:') ||
+              trimmed.startsWith('Practice differentiating between:') ||
+              trimmed.startsWith('To go deeper, get curious:') ||
+              trimmed.startsWith('Work with aligned support:')
+            );
+
+            // Check if paragraph contains bullet points
+            const hasBullets = trimmed.includes('\n•') || trimmed.startsWith('•');
+
+            // Check if paragraph contains numbered list
+            const hasNumbers = trimmed.match(/\n\d+\.\s/) || trimmed.match(/^\d+\.\s/);
+
+            // Check for "Step X:" pattern
+            const isStep = trimmed.match(/^Step \d+:/);
+
+            // Check for "Level X:" pattern
+            const isLevel = trimmed.match(/^Level \d+:/);
+
+            if (isHeader) {
+              return (
+                <h4 key={i} style={{
+                  color: accentColor,
+                  fontFamily: fonts.heading,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  marginTop: i > 0 ? 28 : 0,
+                  marginBottom: 12,
+                }}>
+                  {trimmed}
+                </h4>
+              );
+            }
+
+            if (hasBullets) {
+              const lines = trimmed.split('\n');
+              const headerLine = lines[0].endsWith(':') ? lines[0] : null;
+              const bulletLines = headerLine ? lines.slice(1) : lines;
+
+              return (
+                <div key={i} style={{ marginBottom: 20 }}>
+                  {headerLine && (
+                    <h4 style={{
+                      color: accentColor,
+                      fontFamily: fonts.heading,
+                      fontSize: 15,
+                      fontWeight: 700,
+                      marginBottom: 12,
+                    }}>
+                      {headerLine}
+                    </h4>
+                  )}
+                  {bulletLines.map((line, j) => {
+                    const bulletText = line.replace(/^[•]\s*/, '').trim();
+                    if (!bulletText) return null;
+                    return (
+                      <div key={j} style={{
+                        display: 'flex',
+                        gap: 12,
+                        marginBottom: 8,
+                        paddingLeft: 4,
+                      }}>
+                        <span style={{ color: colors.green, flexShrink: 0 }}>•</span>
+                        <span style={{ color: textColor, lineHeight: 1.6 }}>{bulletText}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }
+
+            if (hasNumbers) {
+              const lines = trimmed.split('\n');
+              const headerLine = lines[0].endsWith(':') ? lines[0] : null;
+              const numberLines = headerLine ? lines.slice(1) : lines;
+
+              return (
+                <div key={i} style={{ marginBottom: 20 }}>
+                  {headerLine && (
+                    <h4 style={{
+                      color: accentColor,
+                      fontFamily: fonts.heading,
+                      fontSize: 15,
+                      fontWeight: 700,
+                      marginBottom: 12,
+                    }}>
+                      {headerLine}
+                    </h4>
+                  )}
+                  {numberLines.map((line, j) => {
+                    const match = line.match(/^(\d+)\.\s*(.+)/);
+                    if (!match) return null;
+                    return (
+                      <div key={j} style={{
+                        display: 'flex',
+                        gap: 12,
+                        marginBottom: 10,
+                        paddingLeft: 4,
+                      }}>
+                        <span style={{
+                          color: colors.green,
+                          fontWeight: 600,
+                          minWidth: 20,
+                        }}>
+                          {match[1]}.
+                        </span>
+                        <span style={{ color: textColor, lineHeight: 1.6 }}>{match[2]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }
+
+            if (isStep) {
+              const match = trimmed.match(/^(Step \d+:)\s*(.+)/s);
+              if (match) {
+                return (
+                  <div key={i} style={{ marginBottom: 20 }}>
+                    <span style={{
+                      color: accentColor,
+                      fontWeight: 600,
+                      fontSize: 15,
+                    }}>
+                      {match[1]}
+                    </span>
+                    <span style={{ color: textColor, lineHeight: 1.7 }}> {match[2]}</span>
+                  </div>
+                );
+              }
+            }
+
+            if (isLevel) {
+              const match = trimmed.match(/^(Level \d+:)\s*([^—]+)\s*—\s*(.+)/);
+              if (match) {
+                return (
+                  <div key={i} style={{
+                    marginBottom: 12,
+                    paddingLeft: 4,
+                    display: 'flex',
+                    gap: 8,
+                  }}>
+                    <span style={{
+                      color: colors.green,
+                      fontWeight: 600,
+                      minWidth: 65,
+                    }}>
+                      {match[1]}
+                    </span>
+                    <span>
+                      <strong style={{ color: headingColor }}>{match[2].trim()}</strong>
+                      <span style={{ color: textColor }}> — {match[3]}</span>
+                    </span>
+                  </div>
+                );
+              }
+            }
+
+            // Check for key phrases to bold
+            let content = trimmed;
+            const boldPhrases = [
+              'Willingness is Key',
+              'This is a Game Changer',
+              'Do It Anyway',
+              'This Is Essential',
+              'It Works!!',
+              'Bottom Line:',
+              'Remember & Trust:',
+              'Important:',
+            ];
+
+            // Check if this is a short emphatic statement
+            const isEmphatic = trimmed.length < 80 && (
+              trimmed.includes('Key') ||
+              trimmed.includes('Game Changer') ||
+              trimmed.includes('Essential') ||
+              trimmed === 'Do It Anyway.' ||
+              trimmed.startsWith('It is up to You')
+            );
+
+            if (isEmphatic) {
+              return (
+                <p key={i} style={{
+                  color: headingColor,
+                  fontWeight: 600,
+                  fontSize: 16,
+                  marginBottom: 16,
+                  marginTop: 8,
+                }}>
+                  {trimmed}
+                </p>
+              );
+            }
+
+            // Regular paragraph
+            return (
+              <p key={i} style={{
+                color: textColor,
+                lineHeight: 1.75,
+                marginBottom: 16,
+              }}>
+                {trimmed}
+              </p>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Logo Component - Uses actual brand logo image
+    const Logo = ({ size = 40 }) => (
+      <img
+        src="./logo.png"
+        alt="Trust In Flow"
+        style={{
+          width: size,
+          height: size,
+          objectFit: 'contain',
+          flexShrink: 0,
+        }}
+      />
+    );
+
+    // LOGIN SCREEN
+    function LoginScreen({ onLogin }) {
+      const [name, setName] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+
+      const handleEnter = () => {
+        if (!name.trim() || !password) return;
+        const key = Object.keys(clientContent).find(
+          k => clientContent[k].name.toLowerCase() === name.trim().toLowerCase()
+        );
+        if (key && password === clientContent[key].password) {
+          onLogin(key);
+        } else {
+          setError('Invalid name or password');
+          setPassword('');
+        }
+      };
+
+      return (
+        <div style={{
+          minHeight: '100vh',
+          background: colors.white,
+          color: colors.darkGrey,
+          fontFamily: fonts.body,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+        }}>
+          <Logo size={80} />
+          <h1 style={{
+            color: colors.teal,
+            fontFamily: fonts.heading,
+            fontWeight: 700,
+            fontSize: 'clamp(24px, 5vw, 32px)',
+            marginTop: 24,
+            marginBottom: 8,
+            letterSpacing: '-0.5px',
+          }}>
+            Trust In Flow
+          </h1>
+          <p style={{
+            color: colors.lightGrey,
+            fontSize: 12,
+            letterSpacing: 3,
+            textTransform: 'uppercase',
+            marginBottom: 48,
+          }}>
+            Integration Practices
+          </p>
+
+          <div style={{ width: '100%', maxWidth: 340 }}>
+            <p style={{
+              textAlign: 'center',
+              marginBottom: 24,
+              color: colors.darkGrey,
+              fontSize: 15,
+            }}>
+              Welcome. Please sign in:
+            </p>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => { setName(e.target.value); setError(''); }}
+              onKeyPress={(e) => e.key === 'Enter' && handleEnter()}
+              placeholder="Your name"
+              autoFocus
+              style={{
+                width: '100%',
+                padding: 16,
+                borderRadius: 8,
+                border: `1px solid ${error ? '#e74c3c' : colors.border}`,
+                background: colors.white,
+                color: colors.darkGrey,
+                fontSize: 16,
+                textAlign: 'center',
+                outline: 'none',
+                boxSizing: 'border-box',
+                marginBottom: 12,
+                transition: 'border-color 0.2s ease',
+              }}
+              onFocus={(e) => e.target.style.borderColor = colors.teal}
+              onBlur={(e) => e.target.style.borderColor = error ? '#e74c3c' : colors.border}
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              onKeyPress={(e) => e.key === 'Enter' && handleEnter()}
+              placeholder="Password"
+              style={{
+                width: '100%',
+                padding: 16,
+                borderRadius: 8,
+                border: `1px solid ${error ? '#e74c3c' : colors.border}`,
+                background: colors.white,
+                color: colors.darkGrey,
+                fontSize: 16,
+                textAlign: 'center',
+                outline: 'none',
+                boxSizing: 'border-box',
+                marginBottom: 8,
+                transition: 'border-color 0.2s ease',
+              }}
+              onFocus={(e) => e.target.style.borderColor = colors.teal}
+              onBlur={(e) => e.target.style.borderColor = error ? '#e74c3c' : colors.border}
+            />
+            {error && (
+              <p style={{
+                color: '#e74c3c',
+                textAlign: 'center',
+                marginBottom: 8,
+                fontSize: 14,
+              }}>
+                {error}
+              </p>
+            )}
+            <button
+              onClick={handleEnter}
+              style={{
+                width: '100%',
+                padding: 16,
+                borderRadius: 8,
+                border: 'none',
+                background: colors.teal,
+                color: colors.white,
+                fontSize: 16,
+                fontWeight: 500,
+                cursor: 'pointer',
+                marginTop: 4,
+                transition: 'background 0.2s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = colors.darkBlue}
+              onMouseOut={(e) => e.currentTarget.style.background = colors.teal}
+            >
+              Enter
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // PRACTICE CARD (clickable thumbnail)
+    function PracticeCard({ practice, onClick }) {
+      return (
+        <div
+          onClick={onClick}
+          style={{
+            background: colors.white,
+            borderRadius: 12,
+            border: '1px solid rgba(0,0,0,0.08)',
+            padding: '20px 24px',
+            cursor: 'pointer',
+            transition: 'all 0.25s ease',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+          }}
+        >
+          <h3 style={{
+            color: colors.teal,
+            fontFamily: fonts.heading,
+            fontSize: 16,
+            fontWeight: 700,
+            marginBottom: 6,
+            lineHeight: 1.4,
+          }}>
+            {practice.title}
+          </h3>
+          <p style={{
+            color: colors.darkGrey,
+            fontSize: 13,
+            fontWeight: 600,
+            margin: 0,
+          }}>
+            {practice.subtitle}
+          </p>
+        </div>
+      );
+    }
+
+    // PRACTICE MODAL (full screen overlay)
+    function PracticeModal({ practice, practiceIndex, onClose, onPrev, onNext, totalPractices, totalScreens }) {
+      const contentRef = useRef(null);
+
+      // Scroll to top when practice changes
+      useEffect(() => {
+        if (contentRef.current) contentRef.current.scrollTop = 0;
+      }, [practiceIndex]);
+
+      // Handle keyboard navigation
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (e.key === 'Escape') onClose();
+          if (e.key === 'ArrowLeft') onPrev();
+          if (e.key === 'ArrowRight' && practiceIndex < totalPractices - 1) onNext();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [onClose, onPrev, onNext, practiceIndex, totalPractices]);
+
+      // Prevent body scroll when modal is open
+      useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = 'auto'; };
+      }, []);
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,51,102,0.98)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'fadeIn 0.3s ease',
+        }}>
+          {/* Modal Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px 24px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            flexShrink: 0,
+          }}>
+            <span style={{
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: 14,
+            }}>
+              Practice {practiceIndex + 1} of {totalPractices}
+            </span>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: 'none',
+                color: colors.white,
+                fontSize: 24,
+                width: 44,
+                height: 44,
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Modal Content - White background */}
+          <div ref={contentRef} style={{
+            flex: 1,
+            overflowY: 'auto',
+            background: colors.white,
+          }}>
+            <div style={{
+              maxWidth: 720,
+              margin: '0 auto',
+              padding: 'clamp(24px, 6vw, 64px)',
+            }}>
+              <div style={{
+                width: 48,
+                height: 4,
+                background: colors.green,
+                borderRadius: 2,
+                marginBottom: 24,
+              }} />
+              <h1 style={{
+                color: colors.teal,
+                fontFamily: fonts.heading,
+                fontSize: 'clamp(24px, 4vw, 32px)',
+                fontWeight: 700,
+                marginBottom: 8,
+                lineHeight: 1.3,
+              }}>
+                {practice.title}
+              </h1>
+              <p style={{
+                color: colors.teal,
+                fontSize: 'clamp(14px, 2vw, 16px)',
+                marginBottom: 32,
+              }}>
+                {practice.subtitle}
+              </p>
+              <div style={{
+                fontSize: 'clamp(15px, 2vw, 16px)',
+              }}>
+                <FormattedContent text={practice.content} />
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Footer - Navigation */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px 24px',
+            background: colors.darkBlue,
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={onPrev}
+              style={{
+                background: colors.green,
+                border: 'none',
+                color: colors.white,
+                fontSize: 16,
+                padding: '12px 24px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'background 0.2s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = '#7a9a47'}
+              onMouseOut={(e) => e.currentTarget.style.background = colors.green}
+            >
+              ← Prev
+            </button>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+              {practiceIndex + 3} of {totalScreens}
+            </span>
+            <button
+              onClick={onNext}
+              disabled={practiceIndex === totalPractices - 1}
+              style={{
+                background: colors.green,
+                border: 'none',
+                color: colors.white,
+                fontSize: 16,
+                padding: '12px 24px',
+                borderRadius: 8,
+                cursor: practiceIndex === totalPractices - 1 ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'background 0.2s ease',
+                opacity: practiceIndex === totalPractices - 1 ? 0.4 : 1,
+              }}
+              onMouseOver={(e) => { if (practiceIndex < totalPractices - 1) e.currentTarget.style.background = '#7a9a47'; }}
+              onMouseOut={(e) => e.currentTarget.style.background = colors.green}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // PERSONAL MODAL (Your True & Possibles)
+    function PersonalModal({ data, totalScreens, onClose, onPrev, onNext }) {
+      // Handle keyboard navigation
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (e.key === 'Escape') onClose();
+          if (e.key === 'ArrowLeft') onPrev();
+          if (e.key === 'ArrowRight') onNext();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [onClose, onPrev, onNext]);
+
+      // Prevent body scroll when modal is open
+      useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = 'auto'; };
+      }, []);
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,51,102,0.98)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          {/* Modal Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px 24px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            flexShrink: 0,
+          }}>
+            <span style={{
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: 14,
+            }}>
+              Your True & Possibles
+            </span>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: 'none',
+                color: colors.white,
+                fontSize: 24,
+                width: 44,
+                height: 44,
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Modal Content - White background */}
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            background: colors.white,
+          }}>
+            <div style={{
+              maxWidth: 720,
+              margin: '0 auto',
+              padding: 'clamp(24px, 6vw, 64px)',
+            }}>
+              <div style={{
+                width: 48,
+                height: 4,
+                background: colors.teal,
+                borderRadius: 2,
+                marginBottom: 24,
+              }} />
+              <h1 style={{
+                color: colors.teal,
+                fontFamily: fonts.heading,
+                fontSize: 'clamp(24px, 4vw, 32px)',
+                fontWeight: 700,
+                marginBottom: 8,
+                lineHeight: 1.3,
+              }}>
+                Your True & Possibles
+              </h1>
+              <p style={{
+                color: colors.teal,
+                fontSize: 'clamp(14px, 2vw, 16px)',
+                marginBottom: 40,
+              }}>
+                For {data.name} • {data.date}
+              </p>
+
+              {data.sections.map((section, i) => (
+                <div key={i} style={{ marginBottom: 32 }}>
+                  <h3 style={{
+                    color: colors.teal,
+                    fontFamily: fonts.heading,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    marginBottom: 16,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}>
+                    {section.title}
+                  </h3>
+                  {section.items.map((item, j) => (
+                    <div key={j} style={{
+                      display: 'flex',
+                      gap: 12,
+                      marginBottom: 12,
+                    }}>
+                      <span style={{
+                        color: colors.green,
+                        flexShrink: 0,
+                        fontSize: 10,
+                        marginTop: 8,
+                      }}>
+                        ●
+                      </span>
+                      <span style={{
+                        color: colors.darkGrey,
+                        fontSize: 'clamp(15px, 2vw, 17px)',
+                        lineHeight: 1.7,
+                      }}>
+                        {item}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px 24px',
+            background: colors.darkBlue,
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={onPrev}
+              style={{
+                background: colors.green,
+                border: 'none',
+                color: colors.white,
+                fontSize: 16,
+                padding: '12px 24px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'background 0.2s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = '#7a9a47'}
+              onMouseOut={(e) => e.currentTarget.style.background = colors.green}
+            >
+              ← Prev
+            </button>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+              2 of {totalScreens}
+            </span>
+            <button
+              onClick={onNext}
+              style={{
+                background: colors.green,
+                border: 'none',
+                color: colors.white,
+                fontSize: 16,
+                padding: '12px 24px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'background 0.2s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = '#7a9a47'}
+              onMouseOut={(e) => e.currentTarget.style.background = colors.green}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // INTRO MODAL
+    function IntroModal({ totalScreens, onClose, onNext }) {
+      // Handle keyboard navigation
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (e.key === 'Escape') onClose();
+          if (e.key === 'ArrowRight') onNext();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [onClose, onNext]);
+
+      // Prevent body scroll when modal is open
+      useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = 'auto'; };
+      }, []);
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,51,102,0.98)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          {/* Modal Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px 24px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            flexShrink: 0,
+          }}>
+            <span style={{
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: 14,
+            }}>
+              {introContent.title}
+            </span>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: 'none',
+                color: colors.white,
+                fontSize: 24,
+                width: 44,
+                height: 44,
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Modal Content - White background */}
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            background: colors.white,
+          }}>
+            <div style={{
+              maxWidth: 720,
+              margin: '0 auto',
+              padding: 'clamp(24px, 6vw, 64px)',
+            }}>
+              <div style={{
+                width: 48,
+                height: 4,
+                background: colors.green,
+                borderRadius: 2,
+                marginBottom: 24,
+              }} />
+              <h1 style={{
+                color: colors.teal,
+                fontFamily: fonts.heading,
+                fontSize: 'clamp(24px, 4vw, 32px)',
+                fontWeight: 700,
+                marginBottom: 16,
+                lineHeight: 1.3,
+              }}>
+                {introContent.title}
+              </h1>
+              {/* Opening paragraph */}
+              <p style={{
+                color: colors.darkGrey,
+                fontSize: 'clamp(15px, 2vw, 17px)',
+                lineHeight: 1.75,
+                marginBottom: 32,
+              }}>
+                {introContent.openingText}
+              </p>
+              {/* Timelines of Self image */}
+              <img
+                src="timelines-of-self.png"
+                alt="The journey from Survival Self through Conditioned Self to Authentic Self and Higher Self"
+                style={{
+                  width: '100%',
+                  maxWidth: 700,
+                  display: 'block',
+                  margin: '0 auto 32px auto',
+                }}
+              />
+              {/* Rest of content */}
+              <div style={{ fontSize: 'clamp(15px, 2vw, 17px)' }}>
+                <FormattedContent text={introContent.text} />
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px 24px',
+            background: colors.darkBlue,
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            flexShrink: 0,
+          }}>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+              1 of {totalScreens}
+            </span>
+            <button
+              onClick={onNext}
+              style={{
+                background: colors.green,
+                border: 'none',
+                color: colors.white,
+                fontSize: 16,
+                padding: '12px 32px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'background 0.2s ease',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = '#7a9a47'}
+              onMouseOut={(e) => e.currentTarget.style.background = colors.green}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // MAIN APP
+    function MainApp({ client, onLogout }) {
+      const [selectedPractice, setSelectedPractice] = useState(null);
+      const [showPersonalModal, setShowPersonalModal] = useState(false);
+      const [showIntroModal, setShowIntroModal] = useState(false);
+      const data = clientContent[client];
+      const clientPractices = data.practices;
+      const totalScreens = 2 + clientPractices.length; // intro + personal + practices
+
+      const currentPracticeIndex = selectedPractice !== null
+        ? clientPractices.findIndex(p => p.id === selectedPractice)
+        : -1;
+
+      // Unified navigation: Intro (0) → Personal (1) → Practices (2+)
+      const getCurrentScreen = () => {
+        if (showIntroModal) return 0;
+        if (showPersonalModal) return 1;
+        if (selectedPractice !== null) return 2 + currentPracticeIndex;
+        return -1;
+      };
+
+      const navigateToScreen = (screenIndex) => {
+        // Close all modals first
+        setShowIntroModal(false);
+        setShowPersonalModal(false);
+        setSelectedPractice(null);
+
+        // Open the appropriate modal
+        if (screenIndex === 0) {
+          setShowIntroModal(true);
+        } else if (screenIndex === 1) {
+          setShowPersonalModal(true);
+        } else if (screenIndex >= 2 && screenIndex < totalScreens) {
+          setSelectedPractice(clientPractices[screenIndex - 2].id);
+        }
+      };
+
+      const handleGlobalPrev = () => {
+        const current = getCurrentScreen();
+        if (current > 0) {
+          navigateToScreen(current - 1);
+        }
+      };
+
+      const handleGlobalNext = () => {
+        const current = getCurrentScreen();
+        if (current < totalScreens - 1) {
+          navigateToScreen(current + 1);
+        }
+      };
+
+      const handlePrev = () => {
+        if (currentPracticeIndex > 0) {
+          setSelectedPractice(clientPractices[currentPracticeIndex - 1].id);
+        } else {
+          // Go back to Personal modal
+          setSelectedPractice(null);
+          setShowPersonalModal(true);
+        }
+      };
+
+      const handleNext = () => {
+        if (currentPracticeIndex < clientPractices.length - 1) {
+          setSelectedPractice(clientPractices[currentPracticeIndex + 1].id);
+        }
+      };
+
+      return (
+        <div style={{
+          minHeight: '100vh',
+          background: colors.darkBlue,
+          color: colors.white,
+          fontFamily: fonts.body,
+        }}>
+          {/* Practice Modal */}
+          {selectedPractice && (
+            <PracticeModal
+              practice={clientPractices[currentPracticeIndex]}
+              practiceIndex={currentPracticeIndex}
+              totalPractices={clientPractices.length}
+              totalScreens={totalScreens}
+              onClose={() => setSelectedPractice(null)}
+              onPrev={handlePrev}
+              onNext={handleNext}
+            />
+          )}
+
+          {/* Personal Modal */}
+          {showPersonalModal && (
+            <PersonalModal
+              data={data}
+              totalScreens={totalScreens}
+              onClose={() => setShowPersonalModal(false)}
+              onPrev={() => {
+                setShowPersonalModal(false);
+                setShowIntroModal(true);
+              }}
+              onNext={() => {
+                setShowPersonalModal(false);
+                setSelectedPractice(clientPractices[0].id);
+              }}
+            />
+          )}
+
+          {/* Intro Modal */}
+          {showIntroModal && (
+            <IntroModal
+              totalScreens={totalScreens}
+              onClose={() => setShowIntroModal(false)}
+              onNext={() => {
+                setShowIntroModal(false);
+                setShowPersonalModal(true);
+              }}
+            />
+          )}
+
+          {/* Header */}
+          <header style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            background: colors.white,
+            borderBottom: `1px solid ${colors.border}`,
+            padding: '12px 24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{
+              maxWidth: 1200,
+              margin: '0 auto',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+              }}>
+                <Logo size={36} />
+                <span style={{
+                  color: colors.teal,
+                  fontFamily: fonts.heading,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  letterSpacing: '-0.3px',
+                }}>
+                  Trust In Flow
+                </span>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 20,
+              }}>
+                <span style={{
+                  color: colors.lightGrey,
+                  fontSize: 14,
+                }}>
+                  {data.name}
+                </span>
+                <button
+                  onClick={onLogout}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 6,
+                    border: `1px solid ${colors.border}`,
+                    background: 'transparent',
+                    color: colors.darkGrey,
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.borderColor = colors.teal;
+                    e.currentTarget.style.color = colors.teal;
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.borderColor = colors.border;
+                    e.currentTarget.style.color = colors.darkGrey;
+                  }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main style={{
+            maxWidth: 1200,
+            margin: '0 auto',
+            padding: 'clamp(16px, 4vw, 32px)',
+          }}>
+            {/* Top Section: Intro + Personal Recommendations - Full Width Stacked */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 24,
+              marginBottom: 48,
+            }}>
+
+              {/* Intro Card - Clickable to open modal */}
+              <div
+                onClick={() => setShowIntroModal(true)}
+                style={{
+                  background: colors.white,
+                  borderRadius: 16,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  padding: 'clamp(20px, 4vw, 32px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                }}
+              >
+                <div style={{
+                  width: 48,
+                  height: 4,
+                  background: colors.green,
+                  borderRadius: 2,
+                  marginBottom: 16,
+                }} />
+                <h2 style={{
+                  color: colors.teal,
+                  fontFamily: fonts.heading,
+                  fontSize: 'clamp(18px, 3vw, 22px)',
+                  fontWeight: 700,
+                  marginBottom: 16,
+                  lineHeight: 1.3,
+                }}>
+                  {introContent.title}
+                </h2>
+                <p style={{
+                  color: colors.darkGrey,
+                  fontSize: 15,
+                  lineHeight: 1.75,
+                  marginBottom: 24,
+                }}>
+                  {introContent.openingText}
+                </p>
+                <img
+                  src="timelines-of-self.png"
+                  alt="The journey from Survival Self through Conditioned Self to Authentic Self and Higher Self"
+                  style={{
+                    width: '100%',
+                    maxWidth: 700,
+                    display: 'block',
+                    margin: '0 auto 24px auto',
+                  }}
+                />
+                <p style={{
+                  color: colors.teal,
+                  fontFamily: fonts.heading,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  margin: 0,
+                }}>
+                  Purpose of Our Work: — Click to view
+                </p>
+              </div>
+
+              {/* Personal Recommendations Card - Clickable to open modal */}
+              <div
+                onClick={() => setShowPersonalModal(true)}
+                style={{
+                  background: colors.white,
+                  borderRadius: 16,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  padding: 'clamp(20px, 4vw, 32px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                }}
+              >
+                <div style={{
+                  width: 48,
+                  height: 4,
+                  background: colors.teal,
+                  borderRadius: 2,
+                  marginBottom: 16,
+                }} />
+                <h2 style={{
+                  color: colors.teal,
+                  fontFamily: fonts.heading,
+                  fontSize: 'clamp(18px, 3vw, 22px)',
+                  fontWeight: 700,
+                  marginBottom: 6,
+                }}>
+                  Your True & Possibles
+                </h2>
+                <p style={{
+                  color: colors.darkGrey,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  margin: 0,
+                }}>
+                  For {data.name} • {data.date} — Click to view
+                </p>
+              </div>
+            </div>
+
+            {/* Section Divider */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+              marginBottom: 32,
+            }}>
+              <div style={{
+                flex: 1,
+                height: 1,
+                background: 'rgba(255,255,255,0.15)',
+              }} />
+              <h2 style={{
+                color: colors.white,
+                fontFamily: fonts.heading,
+                fontSize: 18,
+                fontWeight: 700,
+                margin: 0,
+                whiteSpace: 'nowrap',
+              }}>
+                Integration & Up-Leveling Practices
+              </h2>
+              <div style={{
+                flex: 1,
+                height: 1,
+                background: 'rgba(255,255,255,0.15)',
+              }} />
+            </div>
+
+            {/* Practice Cards Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
+              gap: 16,
+            }}>
+              {clientPractices.map((practice) => (
+                <PracticeCard
+                  key={practice.id}
+                  practice={practice}
+                  onClick={() => setSelectedPractice(practice.id)}
+                />
+              ))}
+            </div>
+
+          </main>
+
+          {/* Footer */}
+          <footer style={{
+            marginTop: 64,
+            padding: '48px 24px',
+            background: colors.white,
+            borderTop: `1px solid ${colors.border}`,
+          }}>
+            {/* Support Message */}
+            <p style={{
+              color: colors.darkBlue,
+              fontSize: 16,
+              lineHeight: 1.7,
+              maxWidth: 700,
+              margin: '0 auto 40px auto',
+              textAlign: 'center',
+              fontStyle: 'italic',
+            }}>
+              If you want or need additional support, reach out to an IHP or BIZ Practitioner or to Diana.
+              <br />
+              Find out What Is Really True & Possible.
+            </p>
+
+            {/* Diana's Info Block - 3 Column Layout with Aligned Rows */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'center',
+              gap: 48,
+              flexWrap: 'wrap',
+              maxWidth: 900,
+              margin: '0 auto',
+            }}>
+              {/* Column 1: Trust In Flow */}
+              <div style={{
+                textAlign: 'center',
+                minWidth: 200,
+              }}>
+                {/* Org name/description area - 120px height to align with photo */}
+                <div style={{ height: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <p style={{
+                    color: colors.teal,
+                    fontFamily: fonts.heading,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    margin: '0 0 6px 0',
+                  }}>
+                    Trust In Flow
+                  </p>
+                  <p style={{
+                    color: colors.lightGrey,
+                    fontSize: 14,
+                    fontStyle: 'italic',
+                    margin: 0,
+                  }}>
+                    Private Client Leadership Services
+                  </p>
+                </div>
+                {/* Email - aligned with Diana's name */}
+                <a
+                  href="mailto:diana@trustinflow.com"
+                  style={{
+                    color: colors.teal,
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    display: 'block',
+                    marginTop: 16,
+                    height: 24,
+                    lineHeight: '24px',
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseOut={(e) => e.currentTarget.style.textDecoration = 'none'}
+                >
+                  diana@trustinflow.com
+                </a>
+                {/* Website - aligned with Founder & Director */}
+                <a
+                  href="https://www.trustinflow.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: colors.teal,
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    display: 'block',
+                    marginTop: 2,
+                    height: 20,
+                    lineHeight: '20px',
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseOut={(e) => e.currentTarget.style.textDecoration = 'none'}
+                >
+                  www.trustinflow.com
+                </a>
+              </div>
+
+              {/* Column 2: Headshot + Name/Title (CENTER) */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                minWidth: 150,
+              }}>
+                {/* Photo area - 120px height */}
+                <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img
+                    src="DianaHeadshot.png"
+                    alt="Diana H. Dokos"
+                    style={{
+                      width: 120,
+                      height: 120,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: `3px solid ${colors.teal}`,
+                    }}
+                  />
+                </div>
+                {/* Name area - 24px height, aligned with emails */}
+                <p style={{
+                  color: colors.teal,
+                  fontFamily: fonts.heading,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  margin: '16px 0 0 0',
+                  textAlign: 'center',
+                  height: 24,
+                  lineHeight: '24px',
+                }}>
+                  Diana H. Dokos
+                </p>
+                {/* Title area - aligned with websites */}
+                <p style={{
+                  color: colors.lightGrey,
+                  fontSize: 14,
+                  margin: '2px 0 0 0',
+                  height: 20,
+                  lineHeight: '20px',
+                }}>
+                  Founder & Director
+                </p>
+              </div>
+
+              {/* Column 3: The Bodhi Bridge */}
+              <div style={{
+                textAlign: 'center',
+                minWidth: 200,
+              }}>
+                {/* Org name/description area - 120px height to align with photo */}
+                <div style={{ height: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <p style={{
+                    color: colors.orange,
+                    fontFamily: fonts.heading,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    margin: '0 0 6px 0',
+                  }}>
+                    The Bodhi Bridge
+                  </p>
+                  <p style={{
+                    color: colors.lightGrey,
+                    fontSize: 14,
+                    fontStyle: 'italic',
+                    margin: 0,
+                  }}>
+                    A Foundation for Awakening
+                  </p>
+                </div>
+                {/* Email - aligned with Diana's name */}
+                <a
+                  href="mailto:diana@bodhibridge.org"
+                  style={{
+                    color: colors.orange,
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    display: 'block',
+                    marginTop: 16,
+                    height: 24,
+                    lineHeight: '24px',
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseOut={(e) => e.currentTarget.style.textDecoration = 'none'}
+                >
+                  diana@bodhibridge.org
+                </a>
+                {/* Website - aligned with Founder & Director */}
+                <a
+                  href="https://www.bodhibridge.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: colors.orange,
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    display: 'block',
+                    marginTop: 2,
+                    height: 20,
+                    lineHeight: '20px',
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseOut={(e) => e.currentTarget.style.textDecoration = 'none'}
+                >
+                  www.bodhibridge.org
+                </a>
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    // ROOT
+    function App() {
+      const [client, setClient] = useState(null);
+
+      if (!client) {
+        return <LoginScreen onLogin={setClient} />;
+      }
+
+      return <MainApp client={client} onLogout={() => setClient(null)} />;
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
