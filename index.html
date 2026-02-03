@@ -45,9 +45,78 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
+
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://pqgxgkfsopjgwpsbrczf.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3hna2Zzb3BqZ3dwc2JyY3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODQ4NTEsImV4cCI6MjA4NTY2MDg1MX0.oL6o8-pLmeQ30pODyte3rYINNjGQLKA_gjIm9pOAh8Y';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Fetch all practices from Supabase
+    async function fetchPractices() {
+      const { data, error } = await supabase
+        .from('practices')
+        .select('*')
+        .order('sort_order');
+      if (error) throw error;
+      return data;
+    }
+
+    // Authenticate client by name and password
+    async function authenticateClient(name, password) {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .ilike('name', name)
+        .eq('password', password)
+        .single();
+      if (error || !data) return null;
+      return data;
+    }
+
+    // Fetch client's practices
+    async function fetchClientPractices(clientId) {
+      const { data, error } = await supabase
+        .from('client_practices')
+        .select(`
+          sort_order,
+          practices (*)
+        `)
+        .eq('client_id', clientId)
+        .order('sort_order');
+      if (error) throw error;
+      return data.map(cp => cp.practices);
+    }
+
+    // Fetch client's sections with items
+    async function fetchClientSections(clientId) {
+      const { data: sections, error: sectionsError } = await supabase
+        .from('sections')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('sort_order');
+      if (sectionsError) throw sectionsError;
+
+      // Fetch items for each section
+      const sectionsWithItems = await Promise.all(
+        sections.map(async (section) => {
+          const { data: items, error: itemsError } = await supabase
+            .from('section_items')
+            .select('*')
+            .eq('section_id', section.id)
+            .order('sort_order');
+          if (itemsError) throw itemsError;
+          return {
+            title: section.title,
+            items: items.map(item => item.content)
+          };
+        })
+      );
+      return sectionsWithItems;
+    }
 
     // Brand Colors
     const colors = {
@@ -445,17 +514,25 @@
       const [name, setName] = useState('');
       const [password, setPassword] = useState('');
       const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
 
-      const handleEnter = () => {
+      const handleEnter = async () => {
         if (!name.trim() || !password) return;
-        const key = Object.keys(clientContent).find(
-          k => clientContent[k].name.toLowerCase() === name.trim().toLowerCase()
-        );
-        if (key && password === clientContent[key].password) {
-          onLogin(key);
-        } else {
-          setError('Invalid name or password');
-          setPassword('');
+        setLoading(true);
+        setError('');
+        try {
+          const client = await authenticateClient(name.trim(), password);
+          if (client) {
+            onLogin(client);
+          } else {
+            setError('Invalid name or password');
+            setPassword('');
+          }
+        } catch (err) {
+          setError('Connection error. Please try again.');
+          console.error(err);
+        } finally {
+          setLoading(false);
         }
       };
 
@@ -561,23 +638,25 @@
             )}
             <button
               onClick={handleEnter}
+              disabled={loading}
               style={{
                 width: '100%',
                 padding: 16,
                 borderRadius: 8,
                 border: 'none',
-                background: colors.teal,
+                background: loading ? colors.lightGrey : colors.teal,
                 color: colors.white,
                 fontSize: 16,
                 fontWeight: 500,
-                cursor: 'pointer',
+                cursor: loading ? 'default' : 'pointer',
                 marginTop: 4,
                 transition: 'background 0.2s ease',
+                opacity: loading ? 0.7 : 1,
               }}
-              onMouseOver={(e) => e.currentTarget.style.background = colors.darkBlue}
-              onMouseOut={(e) => e.currentTarget.style.background = colors.teal}
+              onMouseOver={(e) => !loading && (e.currentTarget.style.background = colors.darkBlue)}
+              onMouseOut={(e) => !loading && (e.currentTarget.style.background = colors.teal)}
             >
-              Enter
+              {loading ? 'Signing in...' : 'Enter'}
             </button>
           </div>
         </div>
@@ -1179,8 +1258,36 @@
       const [selectedPractice, setSelectedPractice] = useState(null);
       const [showPersonalModal, setShowPersonalModal] = useState(false);
       const [showIntroModal, setShowIntroModal] = useState(false);
-      const data = clientContent[client];
-      const clientPractices = data.practices;
+      const [clientPractices, setClientPractices] = useState([]);
+      const [clientSections, setClientSections] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      // Fetch client data from Supabase
+      useEffect(() => {
+        async function loadClientData() {
+          try {
+            const [practices, sections] = await Promise.all([
+              fetchClientPractices(client.id),
+              fetchClientSections(client.id)
+            ]);
+            setClientPractices(practices);
+            setClientSections(sections);
+          } catch (err) {
+            console.error('Error loading client data:', err);
+          } finally {
+            setLoading(false);
+          }
+        }
+        loadClientData();
+      }, [client.id]);
+
+      // Build data object for compatibility with existing components
+      const data = {
+        name: client.name,
+        date: client.session_date,
+        sections: clientSections
+      };
+
       const totalScreens = 2 + clientPractices.length; // intro + personal + practices
 
       const currentPracticeIndex = selectedPractice !== null
@@ -1241,6 +1348,26 @@
         }
       };
 
+      // Loading state
+      if (loading) {
+        return (
+          <div style={{
+            minHeight: '100vh',
+            background: colors.darkBlue,
+            color: colors.white,
+            fontFamily: fonts.body,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <Logo size={60} />
+              <p style={{ marginTop: 20, color: 'rgba(255,255,255,0.7)' }}>Loading your practices...</p>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div style={{
           minHeight: '100vh',
@@ -1249,7 +1376,7 @@
           fontFamily: fonts.body,
         }}>
           {/* Practice Modal */}
-          {selectedPractice && (
+          {selectedPractice && clientPractices[currentPracticeIndex] && (
             <PracticeModal
               practice={clientPractices[currentPracticeIndex]}
               practiceIndex={currentPracticeIndex}
