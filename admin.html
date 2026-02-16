@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trust In Flow - Admin Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; }
+    body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: #f5f5f5; }
+
+    /* Drag and drop styles */
+    .drag-item { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .drag-item.dragging { opacity: 0.5; transform: scale(0.98); }
+    .drag-over { border-top: 3px solid #3582A9 !important; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ─── Supabase Config ───
+    const SUPABASE_URL = 'https://pqgxgkfsopjgwpsbrczf.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3hna2Zzb3BqZ3dwc2JyY3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODQ4NTEsImV4cCI6MjA4NTY2MDg1MX0.oL6o8-pLmeQ30pODyte3rYINNjGQLKA_gjIm9pOAh8Y';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ─── Brand Colors ───
+    const colors = {
+      teal: '#3582A9',
+      darkBlue: '#003366',
+      green: '#9BBB59',
+      orange: '#f19232',
+      lightGrey: '#999999',
+      darkGrey: '#333333',
+      white: '#FFFFFF',
+      offWhite: '#FAFAFA',
+      border: '#E5E5E5',
+      red: '#e74c3c',
+      lightRed: '#fdeaea',
+    };
+
+    const fonts = {
+      heading: '"Hoefler Text", Georgia, "Times New Roman", serif',
+      body: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+    };
+
+    // ─── Shared UI Components ───
+
+    function StatusMessage({ message, type }) {
+      if (!message) return null;
+      const bg = type === 'error' ? colors.lightRed : '#eafaf1';
+      const color = type === 'error' ? colors.red : '#27ae60';
+      return (
+        <div style={{
+          padding: '12px 16px', borderRadius: 8, marginBottom: 16,
+          background: bg, color: color, fontSize: 14, fontWeight: 500,
+        }}>
+          {message}
+        </div>
+      );
+    }
+
+    function Button({ children, onClick, variant = 'primary', disabled = false, style = {} }) {
+      const base = {
+        padding: '10px 20px', borderRadius: 8, border: 'none', fontSize: 14,
+        fontWeight: 600, cursor: disabled ? 'default' : 'pointer',
+        transition: 'all 0.2s ease', opacity: disabled ? 0.6 : 1,
+      };
+      const variants = {
+        primary: { background: colors.teal, color: colors.white },
+        success: { background: colors.green, color: colors.white },
+        danger: { background: colors.red, color: colors.white },
+        secondary: { background: colors.white, color: colors.darkGrey, border: `1px solid ${colors.border}` },
+      };
+      return (
+        <button onClick={onClick} disabled={disabled}
+          style={{ ...base, ...variants[variant], ...style }}>
+          {children}
+        </button>
+      );
+    }
+
+    function Card({ children, style = {} }) {
+      return (
+        <div style={{
+          background: colors.white, borderRadius: 12, padding: 24,
+          border: `1px solid ${colors.border}`, boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          ...style,
+        }}>
+          {children}
+        </div>
+      );
+    }
+
+    function Input({ label, value, onChange, type = 'text', placeholder = '', multiline = false, rows = 4 }) {
+      const inputStyle = {
+        width: '100%', padding: '10px 14px', borderRadius: 8,
+        border: `1px solid ${colors.border}`, fontSize: 14, color: colors.darkGrey,
+        outline: 'none', transition: 'border-color 0.2s ease', fontFamily: fonts.body,
+      };
+      return (
+        <div style={{ marginBottom: 16 }}>
+          {label && <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: colors.darkGrey }}>{label}</label>}
+          {multiline ? (
+            <textarea value={value} onChange={onChange} placeholder={placeholder} rows={rows}
+              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }}
+              onFocus={(e) => e.target.style.borderColor = colors.teal}
+              onBlur={(e) => e.target.style.borderColor = colors.border}
+            />
+          ) : (
+            <input type={type} value={value} onChange={onChange} placeholder={placeholder}
+              style={inputStyle}
+              onFocus={(e) => e.target.style.borderColor = colors.teal}
+              onBlur={(e) => e.target.style.borderColor = colors.border}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // ─── ADMIN LOGIN ───
+
+    function AdminLogin({ onLogin }) {
+      const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const handleLogin = async () => {
+        if (!username.trim() || !password) return;
+        setLoading(true);
+        setError('');
+        try {
+          const { data, error: dbError } = await supabase
+            .from('admin_users')
+            .select('*')
+            .eq('username', username.trim().toLowerCase())
+            .eq('password', password)
+            .single();
+          if (dbError || !data) {
+            setError('Invalid admin credentials');
+            setPassword('');
+          } else {
+            onLogin(data);
+          }
+        } catch (err) {
+          setError('Connection error. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div style={{
+          minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: `linear-gradient(135deg, ${colors.darkBlue} 0%, ${colors.teal} 100%)`,
+          padding: 24,
+        }}>
+          <Card style={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
+            <img src="./logo.png" alt="Trust In Flow" style={{ width: 60, height: 60, objectFit: 'contain', marginBottom: 16 }} />
+            <h1 style={{ fontFamily: fonts.heading, fontSize: 24, color: colors.darkBlue, marginBottom: 4 }}>Admin Dashboard</h1>
+            <p style={{ color: colors.lightGrey, fontSize: 13, marginBottom: 32 }}>Trust In Flow Management</p>
+
+            <Input label="Username" value={username}
+              onChange={(e) => { setUsername(e.target.value); setError(''); }}
+              placeholder="Admin username" />
+            <Input label="Password" value={password} type="password"
+              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              placeholder="Admin password" />
+
+            {error && <p style={{ color: colors.red, fontSize: 14, marginBottom: 12 }}>{error}</p>}
+
+            <Button onClick={handleLogin} disabled={loading} style={{ width: '100%', padding: 14, fontSize: 16 }}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </Card>
+        </div>
+      );
+    }
+
+    // ─── CLIENT MANAGEMENT ───
+
+    function ClientManager({ onEditClient }) {
+      const [clients, setClients] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [showForm, setShowForm] = useState(false);
+      const [editingClient, setEditingClient] = useState(null);
+      const [form, setForm] = useState({ name: '', password: '', session_date: '' });
+      const [status, setStatus] = useState({ message: '', type: '' });
+
+      const loadClients = async () => {
+        const { data, error } = await supabase.from('clients').select('*').order('name');
+        if (!error) setClients(data);
+        setLoading(false);
+      };
+
+      useEffect(() => { loadClients(); }, []);
+
+      const resetForm = () => {
+        setForm({ name: '', password: '', session_date: '' });
+        setEditingClient(null);
+        setShowForm(false);
+      };
+
+      const handleSave = async () => {
+        if (!form.name.trim() || !form.password.trim()) {
+          setStatus({ message: 'Name and password are required.', type: 'error' });
+          return;
+        }
+
+        if (editingClient) {
+          const { error } = await supabase.from('clients')
+            .update({ name: form.name.trim(), password: form.password.trim(), session_date: form.session_date.trim() })
+            .eq('id', editingClient.id);
+          if (error) {
+            setStatus({ message: 'Error updating client: ' + error.message, type: 'error' });
+          } else {
+            setStatus({ message: `${form.name} updated successfully.`, type: 'success' });
+            resetForm();
+            loadClients();
+          }
+        } else {
+          const { error } = await supabase.from('clients')
+            .insert({ name: form.name.trim(), password: form.password.trim(), session_date: form.session_date.trim() });
+          if (error) {
+            setStatus({ message: 'Error creating client: ' + error.message, type: 'error' });
+          } else {
+            setStatus({ message: `${form.name} created successfully.`, type: 'success' });
+            resetForm();
+            loadClients();
+          }
+        }
+      };
+
+      const handleDelete = async (client) => {
+        if (!confirm(`Delete "${client.name}"? This will also remove their practice assignments and True & Possibles sections.`)) return;
+
+        // Delete related data first
+        const { data: sections } = await supabase.from('sections').select('id').eq('client_id', client.id);
+        if (sections) {
+          for (const s of sections) {
+            await supabase.from('section_items').delete().eq('section_id', s.id);
+          }
+        }
+        await supabase.from('sections').delete().eq('client_id', client.id);
+        await supabase.from('client_practices').delete().eq('client_id', client.id);
+        const { error } = await supabase.from('clients').delete().eq('id', client.id);
+
+        if (error) {
+          setStatus({ message: 'Error deleting client: ' + error.message, type: 'error' });
+        } else {
+          setStatus({ message: `${client.name} deleted.`, type: 'success' });
+          loadClients();
+        }
+      };
+
+      const startEdit = (client) => {
+        setForm({ name: client.name, password: client.password, session_date: client.session_date || '' });
+        setEditingClient(client);
+        setShowForm(true);
+      };
+
+      if (loading) return <p style={{ color: colors.lightGrey }}>Loading clients...</p>;
+
+      return (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ fontFamily: fonts.heading, color: colors.darkBlue, fontSize: 22 }}>Clients</h2>
+            <Button onClick={() => { resetForm(); setShowForm(true); }}>+ Add Client</Button>
+          </div>
+
+          <StatusMessage message={status.message} type={status.type} />
+
+          {showForm && (
+            <Card style={{ marginBottom: 24, borderLeft: `4px solid ${colors.teal}` }}>
+              <h3 style={{ fontFamily: fonts.heading, color: colors.darkBlue, marginBottom: 16 }}>
+                {editingClient ? 'Edit Client' : 'New Client'}
+              </h3>
+              <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Client's display name" />
+              <Input label="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Login password" />
+              <Input label="Session Date" value={form.session_date} onChange={(e) => setForm({ ...form, session_date: e.target.value })} placeholder="e.g. January 17-21, 2026" />
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <Button onClick={handleSave}>{editingClient ? 'Update' : 'Create'}</Button>
+                <Button variant="secondary" onClick={resetForm}>Cancel</Button>
+              </div>
+            </Card>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {clients.map(client => (
+              <Card key={client.id} style={{ padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                  <div>
+                    <span style={{ fontWeight: 700, color: colors.darkBlue, fontSize: 16 }}>{client.name}</span>
+                    <span style={{ color: colors.lightGrey, fontSize: 13, marginLeft: 12 }}>{client.session_date || 'No date set'}</span>
+                    <span style={{ color: colors.lightGrey, fontSize: 12, marginLeft: 12 }}>pw: {client.password}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button variant="secondary" onClick={() => onEditClient(client)} style={{ padding: '6px 14px', fontSize: 13 }}>
+                      Practices & Content
+                    </Button>
+                    <Button variant="secondary" onClick={() => startEdit(client)} style={{ padding: '6px 14px', fontSize: 13 }}>
+                      Edit
+                    </Button>
+                    <Button variant="danger" onClick={() => handleDelete(client)} style={{ padding: '6px 14px', fontSize: 13 }}>
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+            {clients.length === 0 && (
+              <p style={{ color: colors.lightGrey, textAlign: 'center', padding: 40 }}>No clients yet. Click "+ Add Client" to get started.</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── PRACTICE ASSIGNMENT (toggle + drag-to-reorder) ───
+
+    function PracticeAssignment({ client, onBack }) {
+      const [allPractices, setAllPractices] = useState([]);
+      const [assignedIds, setAssignedIds] = useState(new Set());
+      const [assignedOrder, setAssignedOrder] = useState([]); // {practice_id, sort_order}
+      const [loading, setLoading] = useState(true);
+      const [saving, setSaving] = useState(false);
+      const [status, setStatus] = useState({ message: '', type: '' });
+      const dragItem = useRef(null);
+      const dragOverItem = useRef(null);
+
+      useEffect(() => {
+        async function load() {
+          const [practicesRes, assignedRes] = await Promise.all([
+            supabase.from('practices').select('*').order('sort_order'),
+            supabase.from('client_practices').select('practice_id, sort_order').eq('client_id', client.id).order('sort_order'),
+          ]);
+          if (practicesRes.data) setAllPractices(practicesRes.data);
+          if (assignedRes.data) {
+            const ids = new Set(assignedRes.data.map(a => a.practice_id));
+            setAssignedIds(ids);
+            setAssignedOrder(assignedRes.data);
+          }
+          setLoading(false);
+        }
+        load();
+      }, [client.id]);
+
+      const togglePractice = async (practiceId) => {
+        const newAssigned = new Set(assignedIds);
+        let newOrder = [...assignedOrder];
+
+        if (newAssigned.has(practiceId)) {
+          // Remove
+          newAssigned.delete(practiceId);
+          newOrder = newOrder.filter(a => a.practice_id !== practiceId);
+          await supabase.from('client_practices').delete().eq('client_id', client.id).eq('practice_id', practiceId);
+        } else {
+          // Add at end
+          const nextOrder = newOrder.length > 0 ? Math.max(...newOrder.map(a => a.sort_order)) + 1 : 0;
+          newAssigned.add(practiceId);
+          newOrder.push({ practice_id: practiceId, sort_order: nextOrder });
+          await supabase.from('client_practices').insert({ client_id: client.id, practice_id: practiceId, sort_order: nextOrder });
+        }
+
+        setAssignedIds(newAssigned);
+        setAssignedOrder(newOrder);
+        setStatus({ message: 'Updated.', type: 'success' });
+      };
+
+      const handleDragStart = (index) => { dragItem.current = index; };
+      const handleDragEnter = (index) => { dragOverItem.current = index; };
+
+      const handleDragEnd = async () => {
+        if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
+          dragItem.current = null;
+          dragOverItem.current = null;
+          return;
+        }
+
+        const newOrder = [...assignedOrder];
+        const draggedItem = newOrder[dragItem.current];
+        newOrder.splice(dragItem.current, 1);
+        newOrder.splice(dragOverItem.current, 0, draggedItem);
+
+        // Update sort_order values
+        const updated = newOrder.map((item, i) => ({ ...item, sort_order: i }));
+        setAssignedOrder(updated);
+        dragItem.current = null;
+        dragOverItem.current = null;
+
+        // Save to database
+        setSaving(true);
+        for (const item of updated) {
+          await supabase.from('client_practices')
+            .update({ sort_order: item.sort_order })
+            .eq('client_id', client.id)
+            .eq('practice_id', item.practice_id);
+        }
+        setSaving(false);
+        setStatus({ message: 'Order saved.', type: 'success' });
+      };
+
+      const getAssignedPractices = () => {
+        return assignedOrder.map(a => allPractices.find(p => p.id === a.practice_id)).filter(Boolean);
+      };
+
+      if (loading) return <p style={{ color: colors.lightGrey }}>Loading practices...</p>;
+
+      return (
+        <div>
+          <button onClick={onBack} style={{
+            background: 'none', border: 'none', color: colors.teal, cursor: 'pointer',
+            fontSize: 14, fontWeight: 600, marginBottom: 20, padding: 0,
+          }}>
+            ← Back to Clients
+          </button>
+
+          <h2 style={{ fontFamily: fonts.heading, color: colors.darkBlue, fontSize: 22, marginBottom: 4 }}>
+            {client.name}'s Practices
+          </h2>
+          <p style={{ color: colors.lightGrey, fontSize: 14, marginBottom: 24 }}>
+            Toggle practices on/off, then drag to reorder the assigned ones.
+          </p>
+
+          <StatusMessage message={status.message} type={status.type} />
+
+          {/* Toggle Grid */}
+          <Card style={{ marginBottom: 32 }}>
+            <h3 style={{ fontFamily: fonts.heading, color: colors.darkBlue, marginBottom: 16, fontSize: 16 }}>
+              Available Practices (click to toggle)
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
+              {allPractices.map(practice => {
+                const isOn = assignedIds.has(practice.id);
+                return (
+                  <div key={practice.id} onClick={() => togglePractice(practice.id)} style={{
+                    padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
+                    border: `2px solid ${isOn ? colors.green : colors.border}`,
+                    background: isOn ? '#f0f9e8' : colors.white,
+                    transition: 'all 0.2s ease',
+                    display: 'flex', alignItems: 'center', gap: 12,
+                  }}>
+                    <div style={{
+                      width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+                      border: `2px solid ${isOn ? colors.green : colors.border}`,
+                      background: isOn ? colors.green : colors.white,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: colors.white, fontSize: 14, fontWeight: 700,
+                    }}>
+                      {isOn ? '✓' : ''}
+                    </div>
+                    <span style={{ fontSize: 14, color: colors.darkGrey, fontWeight: isOn ? 600 : 400 }}>
+                      {practice.title}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Drag-to-Reorder List */}
+          <Card>
+            <h3 style={{ fontFamily: fonts.heading, color: colors.darkBlue, marginBottom: 4, fontSize: 16 }}>
+              Assigned Order {saving && <span style={{ fontSize: 12, color: colors.lightGrey, fontWeight: 400 }}>(saving...)</span>}
+            </h3>
+            <p style={{ color: colors.lightGrey, fontSize: 13, marginBottom: 16 }}>
+              Drag and drop to reorder how practices appear for {client.name}.
+            </p>
+            {getAssignedPractices().length === 0 ? (
+              <p style={{ color: colors.lightGrey, textAlign: 'center', padding: 24 }}>No practices assigned yet. Toggle some on above.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {getAssignedPractices().map((practice, index) => (
+                  <div
+                    key={practice.id}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragEnter={() => handleDragEnter(index)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                    className="drag-item"
+                    style={{
+                      padding: '12px 16px', borderRadius: 8,
+                      border: `1px solid ${colors.border}`, background: colors.offWhite,
+                      display: 'flex', alignItems: 'center', gap: 12, cursor: 'grab',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <span style={{ color: colors.lightGrey, fontSize: 18, cursor: 'grab' }}>⠿</span>
+                    <span style={{ color: colors.teal, fontWeight: 700, fontSize: 14, minWidth: 24 }}>{index + 1}.</span>
+                    <span style={{ fontSize: 14, color: colors.darkGrey }}>{practice.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      );
+    }
+
+    // ─── TRUE & POSSIBLES EDITOR ───
+
+    function TruePossiblesEditor({ client, onBack }) {
+      const [sections, setSections] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [status, setStatus] = useState({ message: '', type: '' });
+      const [newSectionTitle, setNewSectionTitle] = useState('');
+
+      const loadSections = async () => {
+        const { data: secs, error } = await supabase.from('sections')
+          .select('*').eq('client_id', client.id).order('sort_order');
+        if (error) { setStatus({ message: error.message, type: 'error' }); return; }
+
+        const withItems = await Promise.all(secs.map(async (sec) => {
+          const { data: items } = await supabase.from('section_items')
+            .select('*').eq('section_id', sec.id).order('sort_order');
+          return { ...sec, items: items || [] };
+        }));
+        setSections(withItems);
+        setLoading(false);
+      };
+
+      useEffect(() => { loadSections(); }, [client.id]);
+
+      const addSection = async () => {
+        if (!newSectionTitle.trim()) return;
+        const nextOrder = sections.length;
+        const { error } = await supabase.from('sections')
+          .insert({ client_id: client.id, title: newSectionTitle.trim(), sort_order: nextOrder });
+        if (error) { setStatus({ message: error.message, type: 'error' }); return; }
+        setNewSectionTitle('');
+        setStatus({ message: 'Section added.', type: 'success' });
+        loadSections();
+      };
+
+      const updateSectionTitle = async (sectionId, newTitle) => {
+        await supabase.from('sections').update({ title: newTitle }).eq('id', sectionId);
+      };
+
+      const deleteSection = async (section) => {
+        if (!confirm(`Delete section "${section.title}" and all its items?`)) return;
+        await supabase.from('section_items').delete().eq('section_id', section.id);
+        await supabase.from('sections').delete().eq('id', section.id);
+        setStatus({ message: 'Section deleted.', type: 'success' });
+        loadSections();
+      };
+
+      const addItem = async (sectionId, currentItems) => {
+        const nextOrder = currentItems.length;
+        const { error } = await supabase.from('section_items')
+          .insert({ section_id: sectionId, content: 'New item - click to edit', sort_order: nextOrder });
+        if (error) { setStatus({ message: error.message, type: 'error' }); return; }
+        loadSections();
+      };
+
+      const updateItem = async (itemId, newContent) => {
+        await supabase.from('section_items').update({ content: newContent }).eq('id', itemId);
+      };
+
+      const deleteItem = async (itemId) => {
+        await supabase.from('section_items').delete().eq('id', itemId);
+        loadSections();
+      };
+
+      if (loading) return <p style={{ color: colors.lightGrey }}>Loading sections...</p>;
+
+      return (
+        <div>
+          <button onClick={onBack} style={{
+            background: 'none', border: 'none', color: colors.teal, cursor: 'pointer',
+            fontSize: 14, fontWeight: 600, marginBottom: 20, padding: 0,
+          }}>
+            ← Back to Clients
+          </button>
+
+          <h2 style={{ fontFamily: fonts.heading, color: colors.darkBlue, fontSize: 22, marginBottom: 4 }}>
+            {client.name}'s True & Possibles
+          </h2>
+          <p style={{ color: colors.lightGrey, fontSize: 14, marginBottom: 24 }}>
+            Manage the personalized sections shown to {client.name} after login.
+          </p>
+
+          <StatusMessage message={status.message} type={status.type} />
+
+          {/* Add New Section */}
+          <Card style={{ marginBottom: 24, borderLeft: `4px solid ${colors.green}` }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <Input label="Add New Section" value={newSectionTitle}
+                  onChange={(e) => setNewSectionTitle(e.target.value)}
+                  placeholder="e.g. Essence & Intentions (stone name)" />
+              </div>
+              <Button onClick={addSection} style={{ marginBottom: 16 }}>Add</Button>
+            </div>
+          </Card>
+
+          {/* Sections */}
+          {sections.map((section) => (
+            <SectionEditor key={section.id} section={section}
+              onUpdateTitle={updateSectionTitle}
+              onDeleteSection={() => deleteSection(section)}
+              onAddItem={() => addItem(section.id, section.items)}
+              onUpdateItem={updateItem}
+              onDeleteItem={deleteItem}
+            />
+          ))}
+
+          {sections.length === 0 && (
+            <p style={{ color: colors.lightGrey, textAlign: 'center', padding: 40 }}>
+              No sections yet. Add one above.
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    function SectionEditor({ section, onUpdateTitle, onDeleteSection, onAddItem, onUpdateItem, onDeleteItem }) {
+      const [title, setTitle] = useState(section.title);
+      const [editingItemId, setEditingItemId] = useState(null);
+      const [editingItemContent, setEditingItemContent] = useState('');
+
+      const saveTitle = () => {
+        if (title.trim() && title !== section.title) {
+          onUpdateTitle(section.id, title.trim());
+        }
+      };
+
+      const startEditItem = (item) => {
+        setEditingItemId(item.id);
+        setEditingItemContent(item.content);
+      };
+
+      const saveItem = () => {
+        if (editingItemContent.trim()) {
+          onUpdateItem(editingItemId, editingItemContent.trim());
+        }
+        setEditingItemId(null);
+        setEditingItemContent('');
+      };
+
+      return (
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={saveTitle}
+              style={{
+                fontFamily: fonts.heading, fontSize: 16, fontWeight: 700, color: colors.teal,
+                border: 'none', borderBottom: `2px solid transparent`, outline: 'none',
+                background: 'transparent', padding: '4px 0', flex: 1,
+              }}
+              onFocus={(e) => e.target.style.borderBottomColor = colors.teal}
+              onBlur={(e) => { e.target.style.borderBottomColor = 'transparent'; saveTitle(); }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button variant="secondary" onClick={onAddItem} style={{ padding: '4px 12px', fontSize: 12 }}>+ Item</Button>
+              <Button variant="danger" onClick={onDeleteSection} style={{ padding: '4px 12px', fontSize: 12 }}>Delete</Button>
+            </div>
+          </div>
+
+          {section.items.map((item) => (
+            <div key={item.id} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
+              <span style={{ color: colors.green, flexShrink: 0, marginTop: 4, fontSize: 10 }}>●</span>
+              {editingItemId === item.id ? (
+                <div style={{ flex: 1 }}>
+                  <textarea value={editingItemContent} onChange={(e) => setEditingItemContent(e.target.value)}
+                    rows={3} style={{
+                      width: '100%', padding: 8, borderRadius: 6, border: `1px solid ${colors.teal}`,
+                      fontSize: 14, lineHeight: 1.6, resize: 'vertical', outline: 'none', fontFamily: fonts.body,
+                    }} autoFocus />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                    <Button onClick={saveItem} style={{ padding: '4px 12px', fontSize: 12 }}>Save</Button>
+                    <Button variant="secondary" onClick={() => setEditingItemId(null)} style={{ padding: '4px 12px', fontSize: 12 }}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <span onClick={() => startEditItem(item)} style={{
+                    fontSize: 14, color: colors.darkGrey, lineHeight: 1.6, cursor: 'pointer',
+                    borderBottom: '1px dashed transparent',
+                  }}
+                    onMouseOver={(e) => e.target.style.borderBottomColor = colors.lightGrey}
+                    onMouseOut={(e) => e.target.style.borderBottomColor = 'transparent'}
+                  >
+                    {item.content}
+                  </span>
+                  <button onClick={() => onDeleteItem(item.id)} style={{
+                    background: 'none', border: 'none', color: colors.lightGrey, cursor: 'pointer',
+                    fontSize: 16, flexShrink: 0, padding: '0 4px',
+                  }}
+                    onMouseOver={(e) => e.target.style.color = colors.red}
+                    onMouseOut={(e) => e.target.style.color = colors.lightGrey}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </Card>
+      );
+    }
+
+    // ─── CLIENT DETAIL VIEW (practices + true/possibles tabs) ───
+
+    function ClientDetail({ client, onBack }) {
+      const [tab, setTab] = useState('practices');
+
+      return (
+        <div>
+          <button onClick={onBack} style={{
+            background: 'none', border: 'none', color: colors.teal, cursor: 'pointer',
+            fontSize: 14, fontWeight: 600, marginBottom: 20, padding: 0,
+          }}>
+            ← Back to Clients
+          </button>
+
+          <h2 style={{ fontFamily: fonts.heading, color: colors.darkBlue, fontSize: 22, marginBottom: 20 }}>
+            Managing: {client.name}
+          </h2>
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: `2px solid ${colors.border}` }}>
+            {[
+              { key: 'practices', label: 'Practice Assignment' },
+              { key: 'truepossibles', label: 'True & Possibles' },
+            ].map(t => (
+              <button key={t.key} onClick={() => setTab(t.key)} style={{
+                padding: '12px 24px', border: 'none', background: 'none', cursor: 'pointer',
+                fontSize: 15, fontWeight: 600,
+                color: tab === t.key ? colors.teal : colors.lightGrey,
+                borderBottom: tab === t.key ? `3px solid ${colors.teal}` : '3px solid transparent',
+                marginBottom: -2, transition: 'all 0.2s ease',
+              }}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'practices' && <PracticeAssignment client={client} onBack={onBack} />}
+          {tab === 'truepossibles' && <TruePossiblesEditor client={client} onBack={onBack} />}
+        </div>
+      );
+    }
+
+    // ─── GLOBAL PRACTICE EDITOR ───
+
+    function PracticeEditor() {
+      const [practices, setPractices] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [editingPractice, setEditingPractice] = useState(null);
+      const [form, setForm] = useState({ title: '', subtitle: '', content: '', youtube_url: '', pdf_url: '' });
+      const [status, setStatus] = useState({ message: '', type: '' });
+
+      const loadPractices = async () => {
+        const { data, error } = await supabase.from('practices').select('*').order('sort_order');
+        if (!error) setPractices(data);
+        setLoading(false);
+      };
+
+      useEffect(() => { loadPractices(); }, []);
+
+      const startEdit = (practice) => {
+        setEditingPractice(practice);
+        setForm({
+          title: practice.title || '',
+          subtitle: practice.subtitle || '',
+          content: practice.content || '',
+          youtube_url: practice.youtube_url || '',
+          pdf_url: practice.pdf_url || '',
+        });
+        setStatus({ message: '', type: '' });
+      };
+
+      const handleSave = async () => {
+        if (!form.title.trim()) {
+          setStatus({ message: 'Title is required.', type: 'error' });
+          return;
+        }
+
+        const { error } = await supabase.from('practices')
+          .update({
+            title: form.title.trim(),
+            subtitle: form.subtitle.trim(),
+            content: form.content,
+            youtube_url: form.youtube_url.trim() || null,
+            pdf_url: form.pdf_url.trim() || null,
+          })
+          .eq('id', editingPractice.id);
+
+        if (error) {
+          setStatus({ message: 'Error saving: ' + error.message, type: 'error' });
+        } else {
+          setStatus({ message: `"${form.title}" saved successfully. Changes apply to all clients.`, type: 'success' });
+          setEditingPractice(null);
+          loadPractices();
+        }
+      };
+
+      if (loading) return <p style={{ color: colors.lightGrey }}>Loading practices...</p>;
+
+      return (
+        <div>
+          <h2 style={{ fontFamily: fonts.heading, color: colors.darkBlue, fontSize: 22, marginBottom: 4 }}>
+            Global Practices
+          </h2>
+          <p style={{ color: colors.lightGrey, fontSize: 14, marginBottom: 24 }}>
+            Edit any practice below. Changes apply globally to all clients who have this practice assigned.
+          </p>
+
+          <StatusMessage message={status.message} type={status.type} />
+
+          {editingPractice ? (
+            <Card style={{ borderLeft: `4px solid ${colors.teal}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h3 style={{ fontFamily: fonts.heading, color: colors.darkBlue }}>Editing Practice</h3>
+                <Button variant="secondary" onClick={() => setEditingPractice(null)}>Cancel</Button>
+              </div>
+
+              <Input label="Title" value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              <Input label="Subtitle" value={form.subtitle}
+                onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
+              <Input label="Content" value={form.content} multiline rows={16}
+                onChange={(e) => setForm({ ...form, content: e.target.value })} />
+
+              <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 16, marginTop: 8 }}>
+                <h4 style={{ fontFamily: fonts.heading, color: colors.darkBlue, fontSize: 15, marginBottom: 12 }}>
+                  Media Attachments
+                </h4>
+                <Input label="YouTube URL (optional)" value={form.youtube_url}
+                  onChange={(e) => setForm({ ...form, youtube_url: e.target.value })}
+                  placeholder="e.g. https://www.youtube.com/watch?v=..." />
+                <Input label="PDF Download URL (optional)" value={form.pdf_url}
+                  onChange={(e) => setForm({ ...form, pdf_url: e.target.value })}
+                  placeholder="e.g. https://drive.google.com/file/d/..." />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <Button variant="success" onClick={handleSave}>Save Changes</Button>
+                <Button variant="secondary" onClick={() => setEditingPractice(null)}>Cancel</Button>
+              </div>
+            </Card>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {practices.map((practice) => (
+                <Card key={practice.id} style={{ padding: 16, cursor: 'pointer' }} >
+                  <div onClick={() => startEdit(practice)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ color: colors.teal, fontFamily: fonts.heading, fontSize: 15, marginBottom: 4 }}>
+                        {practice.title}
+                      </h3>
+                      <p style={{ color: colors.lightGrey, fontSize: 13, margin: 0 }}>
+                        {practice.subtitle}
+                        {practice.youtube_url && <span style={{ marginLeft: 8, color: colors.red, fontSize: 11 }}>▶ Video</span>}
+                        {practice.pdf_url && <span style={{ marginLeft: 8, color: colors.orange, fontSize: 11 }}>📄 PDF</span>}
+                      </p>
+                    </div>
+                    <span style={{ color: colors.teal, fontSize: 14, fontWeight: 600 }}>Edit →</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ─── MAIN ADMIN APP ───
+
+    function AdminApp() {
+      const [admin, setAdmin] = useState(null);
+      const [currentView, setCurrentView] = useState('clients'); // 'clients' | 'practices'
+      const [selectedClient, setSelectedClient] = useState(null);
+
+      if (!admin) return <AdminLogin onLogin={setAdmin} />;
+
+      return (
+        <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+          {/* Top Nav */}
+          <header style={{
+            background: colors.white, borderBottom: `1px solid ${colors.border}`,
+            padding: '0 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            position: 'sticky', top: 0, zIndex: 100,
+          }}>
+            <div style={{
+              maxWidth: 1100, margin: '0 auto',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 60,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <img src="./logo.png" alt="Trust In Flow" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                <span style={{ fontFamily: fonts.heading, fontSize: 17, color: colors.darkBlue, fontWeight: 700 }}>
+                  Admin Dashboard
+                </span>
+                <div style={{ display: 'flex', gap: 0, marginLeft: 24 }}>
+                  {[
+                    { key: 'clients', label: 'Clients' },
+                    { key: 'practices', label: 'Practices' },
+                  ].map(tab => (
+                    <button key={tab.key}
+                      onClick={() => { setCurrentView(tab.key); setSelectedClient(null); }}
+                      style={{
+                        padding: '18px 20px', border: 'none', background: 'none', cursor: 'pointer',
+                        fontSize: 14, fontWeight: 600,
+                        color: currentView === tab.key ? colors.teal : colors.lightGrey,
+                        borderBottom: currentView === tab.key ? `3px solid ${colors.teal}` : '3px solid transparent',
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ color: colors.lightGrey, fontSize: 13 }}>Signed in as {admin.username}</span>
+                <Button variant="secondary" onClick={() => setAdmin(null)} style={{ padding: '6px 14px', fontSize: 13 }}>
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          {/* Content */}
+          <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
+            {currentView === 'clients' && !selectedClient && (
+              <ClientManager onEditClient={(client) => setSelectedClient(client)} />
+            )}
+            {currentView === 'clients' && selectedClient && (
+              <ClientDetail client={selectedClient} onBack={() => setSelectedClient(null)} />
+            )}
+            {currentView === 'practices' && (
+              <PracticeEditor />
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    // ─── RENDER ───
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AdminApp />);
+  </script>
+</body>
+</html>
