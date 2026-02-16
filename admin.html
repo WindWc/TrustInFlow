@@ -755,8 +755,11 @@
       const [practices, setPractices] = useState([]);
       const [loading, setLoading] = useState(true);
       const [editingPractice, setEditingPractice] = useState(null);
+      const [isCreating, setIsCreating] = useState(false);
       const [form, setForm] = useState({ title: '', subtitle: '', content: '', youtube_url: '', pdf_url: '' });
       const [status, setStatus] = useState({ message: '', type: '' });
+
+      const emptyForm = { title: '', subtitle: '', content: '', youtube_url: '', pdf_url: '' };
 
       const loadPractices = async () => {
         const { data, error } = await supabase.from('practices').select('*').order('sort_order');
@@ -766,7 +769,15 @@
 
       useEffect(() => { loadPractices(); }, []);
 
+      const startCreate = () => {
+        setEditingPractice(null);
+        setIsCreating(true);
+        setForm({ ...emptyForm });
+        setStatus({ message: '', type: '' });
+      };
+
       const startEdit = (practice) => {
+        setIsCreating(false);
         setEditingPractice(practice);
         setForm({
           title: practice.title || '',
@@ -776,6 +787,40 @@
           pdf_url: practice.pdf_url || '',
         });
         setStatus({ message: '', type: '' });
+      };
+
+      const cancelForm = () => {
+        setEditingPractice(null);
+        setIsCreating(false);
+        setForm({ ...emptyForm });
+      };
+
+      const handleCreate = async () => {
+        if (!form.title.trim()) {
+          setStatus({ message: 'Title is required.', type: 'error' });
+          return;
+        }
+
+        const maxOrder = practices.reduce((max, p) => Math.max(max, p.sort_order || 0), 0);
+
+        const { error } = await supabase.from('practices')
+          .insert({
+            title: form.title.trim(),
+            subtitle: form.subtitle.trim(),
+            content: form.content,
+            youtube_url: form.youtube_url.trim() || null,
+            pdf_url: form.pdf_url.trim() || null,
+            sort_order: maxOrder + 1,
+          });
+
+        if (error) {
+          setStatus({ message: 'Error creating practice: ' + error.message, type: 'error' });
+        } else {
+          setStatus({ message: `"${form.title}" created successfully!`, type: 'success' });
+          setIsCreating(false);
+          setForm({ ...emptyForm });
+          loadPractices();
+        }
       };
 
       const handleSave = async () => {
@@ -807,20 +852,29 @@
 
       return (
         <div>
-          <h2 style={{ fontFamily: fonts.heading, color: colors.darkBlue, fontSize: 22, marginBottom: 4 }}>
-            Global Practices
-          </h2>
-          <p style={{ color: colors.lightGrey, fontSize: 14, marginBottom: 24 }}>
-            Edit any practice below. Changes apply globally to all clients who have this practice assigned.
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+            <div>
+              <h2 style={{ fontFamily: fonts.heading, color: colors.darkBlue, fontSize: 22, marginBottom: 4 }}>
+                Global Practices
+              </h2>
+              <p style={{ color: colors.lightGrey, fontSize: 14, margin: 0 }}>
+                Edit any practice below or add a new one. Changes apply globally to all clients.
+              </p>
+            </div>
+            {!editingPractice && !isCreating && (
+              <Button variant="success" onClick={startCreate}>+ Add New Practice</Button>
+            )}
+          </div>
 
           <StatusMessage message={status.message} type={status.type} />
 
-          {editingPractice ? (
-            <Card style={{ borderLeft: `4px solid ${colors.teal}` }}>
+          {(editingPractice || isCreating) ? (
+            <Card style={{ borderLeft: `4px solid ${isCreating ? colors.green : colors.teal}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ fontFamily: fonts.heading, color: colors.darkBlue }}>Editing Practice</h3>
-                <Button variant="secondary" onClick={() => setEditingPractice(null)}>Cancel</Button>
+                <h3 style={{ fontFamily: fonts.heading, color: colors.darkBlue }}>
+                  {isCreating ? 'New Practice' : 'Editing Practice'}
+                </h3>
+                <Button variant="secondary" onClick={cancelForm}>Cancel</Button>
               </div>
 
               <Input label="Title" value={form.title}
@@ -843,8 +897,10 @@
               </div>
 
               <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                <Button variant="success" onClick={handleSave}>Save Changes</Button>
-                <Button variant="secondary" onClick={() => setEditingPractice(null)}>Cancel</Button>
+                <Button variant="success" onClick={isCreating ? handleCreate : handleSave}>
+                  {isCreating ? 'Create Practice' : 'Save Changes'}
+                </Button>
+                <Button variant="secondary" onClick={cancelForm}>Cancel</Button>
               </div>
             </Card>
           ) : (
