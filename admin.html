@@ -187,6 +187,10 @@
 
     // ─── CLIENT MANAGEMENT ───
 
+    function generateSlug(name) {
+      return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
     function ClientManager({ onEditClient }) {
       const [clients, setClients] = useState([]);
       const [loading, setLoading] = useState(true);
@@ -217,7 +221,7 @@
 
         if (editingClient) {
           const { error } = await supabase.from('clients')
-            .update({ name: form.name.trim(), password: form.password.trim(), session_date: form.session_date.trim() })
+            .update({ name: form.name.trim(), slug: generateSlug(form.name), password: form.password.trim(), session_date: form.session_date.trim() })
             .eq('id', editingClient.id);
           if (error) {
             setStatus({ message: 'Error updating client: ' + error.message, type: 'error' });
@@ -228,7 +232,7 @@
           }
         } else {
           const { error } = await supabase.from('clients')
-            .insert({ name: form.name.trim(), password: form.password.trim(), session_date: form.session_date.trim() });
+            .insert({ name: form.name.trim(), slug: generateSlug(form.name), password: form.password.trim(), session_date: form.session_date.trim() });
           if (error) {
             setStatus({ message: 'Error creating client: ' + error.message, type: 'error' });
           } else {
