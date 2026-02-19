@@ -804,9 +804,11 @@
         }
 
         const maxOrder = practices.reduce((max, p) => Math.max(max, p.sort_order || 0), 0);
+        const code = form.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
         const { error } = await supabase.from('practices')
           .insert({
+            code,
             title: form.title.trim(),
             subtitle: form.subtitle.trim(),
             content: form.content,
