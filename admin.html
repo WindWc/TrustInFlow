@@ -508,6 +508,46 @@
       );
     }
 
+    // ─── BULK PASTE PARSER ───
+
+    function parseBulkText(text) {
+      const lines = text.split('\n');
+      const result = [];
+      let currentSection = null;
+
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) continue;
+
+        // Check if line is a bullet item (starts with *, •, -, or numbered like "1. ")
+        const bulletMatch = line.match(/^(?:[*•\-])\s+(.*)/);
+        if (bulletMatch) {
+          const content = bulletMatch[1].replace(/\*\*/g, '').trim();
+          if (content && currentSection) {
+            currentSection.items.push(content);
+          } else if (content) {
+            // Bullet without a section header — create untitled section
+            if (!currentSection) {
+              currentSection = { title: 'Untitled Section', items: [] };
+              result.push(currentSection);
+            }
+            currentSection.items.push(content);
+          }
+        } else {
+          // Treat as section header — strip numbering like "1) " or "1. " and bold markers
+          const title = line
+            .replace(/^\d+[.)]\s*/, '')   // strip leading "1) " or "1. "
+            .replace(/\*\*/g, '')          // strip ** bold markers
+            .trim();
+          if (title) {
+            currentSection = { title, items: [] };
+            result.push(currentSection);
+          }
+        }
+      }
+      return result;
+    }
+
     // ─── TRUE & POSSIBLES EDITOR ───
 
     function TruePossiblesEditor({ client, onBack }) {
@@ -515,6 +555,8 @@
       const [loading, setLoading] = useState(true);
       const [status, setStatus] = useState({ message: '', type: '' });
       const [newSectionTitle, setNewSectionTitle] = useState('');
+      const [showBulkImport, setShowBulkImport] = useState(false);
+      const [bulkImportText, setBulkImportText] = useState('');
 
       const loadSections = async () => {
         const { data: secs, error } = await supabase.from('sections')
@@ -572,6 +614,49 @@
         loadSections();
       };
 
+      const bulkAddItems = async (sectionId, items, existingCount) => {
+        if (!items.length) return;
+        const rows = items.map((content, i) => ({
+          section_id: sectionId,
+          content,
+          sort_order: existingCount + i,
+        }));
+        const { error } = await supabase.from('section_items').insert(rows);
+        if (error) { setStatus({ message: error.message, type: 'error' }); return; }
+        setStatus({ message: `${items.length} item${items.length > 1 ? 's' : ''} added.`, type: 'success' });
+        loadSections();
+      };
+
+      const bulkImportSession = async () => {
+        if (!bulkImportText.trim()) return;
+        const parsed = parseBulkText(bulkImportText);
+        if (!parsed.length) {
+          setStatus({ message: 'Could not detect any sections or items. Make sure bullet points start with * or -.', type: 'error' });
+          return;
+        }
+        const baseOrder = sections.length;
+        let totalItems = 0;
+        for (let i = 0; i < parsed.length; i++) {
+          const { title, items } = parsed[i];
+          const { data: sec, error: secErr } = await supabase.from('sections')
+            .insert({ client_id: client.id, title, sort_order: baseOrder + i })
+            .select('id').single();
+          if (secErr) { setStatus({ message: secErr.message, type: 'error' }); return; }
+          if (items.length) {
+            const rows = items.map((content, j) => ({
+              section_id: sec.id, content, sort_order: j,
+            }));
+            const { error: itemErr } = await supabase.from('section_items').insert(rows);
+            if (itemErr) { setStatus({ message: itemErr.message, type: 'error' }); return; }
+            totalItems += items.length;
+          }
+        }
+        setBulkImportText('');
+        setShowBulkImport(false);
+        setStatus({ message: `Imported ${parsed.length} section${parsed.length > 1 ? 's' : ''} with ${totalItems} item${totalItems > 1 ? 's' : ''}.`, type: 'success' });
+        loadSections();
+      };
+
       if (loading) return <p style={{ color: colors.lightGrey }}>Loading sections...</p>;
 
       return (
@@ -604,6 +689,47 @@
             </div>
           </Card>
 
+          {/* Bulk Import Session */}
+          <Card style={{ marginBottom: 24, borderLeft: `4px solid ${colors.teal}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontFamily: fonts.heading, fontWeight: 700, color: colors.darkBlue, fontSize: 15 }}>
+                  Bulk Import Session
+                </span>
+                <p style={{ color: colors.lightGrey, fontSize: 12, marginTop: 2, marginBottom: 0 }}>
+                  Paste an entire session with section headers and bullet points
+                </p>
+              </div>
+              <Button variant="secondary" onClick={() => setShowBulkImport(!showBulkImport)}
+                style={{ padding: '6px 16px', fontSize: 13 }}>
+                {showBulkImport ? 'Cancel' : 'Paste Session'}
+              </Button>
+            </div>
+            {showBulkImport && (
+              <div style={{ marginTop: 16 }}>
+                <textarea
+                  value={bulkImportText}
+                  onChange={(e) => setBulkImportText(e.target.value)}
+                  rows={12}
+                  placeholder={`Paste your session content here. Example:\n\n1) **Essence/Intentions** (Creator stone)\n* Any and all current projects can be massively successful.\n* They can be a tidal wave of possibility.\n\n2) **Healing** (Heart stone)\n* I release old patterns that no longer serve me.\n* I embrace wholeness and vitality.`}
+                  style={{
+                    width: '100%', padding: 12, borderRadius: 8, border: `1px solid ${colors.teal}`,
+                    fontSize: 14, lineHeight: 1.7, resize: 'vertical', outline: 'none',
+                    fontFamily: fonts.body, background: '#f8fffe',
+                  }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                  <span style={{ color: colors.lightGrey, fontSize: 12 }}>
+                    Section headers are auto-detected. Lines starting with * or - become items.
+                  </span>
+                  <Button onClick={bulkImportSession} style={{ padding: '8px 24px' }}>
+                    Import All
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+
           {/* Sections */}
           {sections.map((section) => (
             <SectionEditor key={section.id} section={section}
@@ -612,6 +738,7 @@
               onAddItem={() => addItem(section.id, section.items)}
               onUpdateItem={updateItem}
               onDeleteItem={deleteItem}
+              onBulkAddItems={(items) => bulkAddItems(section.id, items, section.items.length)}
             />
           ))}
 
@@ -624,10 +751,12 @@
       );
     }
 
-    function SectionEditor({ section, onUpdateTitle, onDeleteSection, onAddItem, onUpdateItem, onDeleteItem }) {
+    function SectionEditor({ section, onUpdateTitle, onDeleteSection, onAddItem, onUpdateItem, onDeleteItem, onBulkAddItems }) {
       const [title, setTitle] = useState(section.title);
       const [editingItemId, setEditingItemId] = useState(null);
       const [editingItemContent, setEditingItemContent] = useState('');
+      const [showPasteItems, setShowPasteItems] = useState(false);
+      const [pasteItemsText, setPasteItemsText] = useState('');
 
       const saveTitle = () => {
         if (title.trim() && title !== section.title) {
@@ -648,6 +777,27 @@
         setEditingItemContent('');
       };
 
+      const handlePasteItems = () => {
+        if (!pasteItemsText.trim()) return;
+        const lines = pasteItemsText.split('\n');
+        const items = [];
+        for (const raw of lines) {
+          const line = raw.trim();
+          if (!line) continue;
+          // Strip bullet prefix (* , • , - ) and bold markers
+          const cleaned = line
+            .replace(/^(?:[*•\-])\s+/, '')
+            .replace(/\*\*/g, '')
+            .trim();
+          if (cleaned) items.push(cleaned);
+        }
+        if (items.length) {
+          onBulkAddItems(items);
+          setPasteItemsText('');
+          setShowPasteItems(false);
+        }
+      };
+
       return (
         <Card style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -661,10 +811,39 @@
               onBlur={(e) => { e.target.style.borderBottomColor = 'transparent'; saveTitle(); }}
             />
             <div style={{ display: 'flex', gap: 8 }}>
+              <Button variant="secondary" onClick={() => setShowPasteItems(!showPasteItems)}
+                style={{ padding: '4px 12px', fontSize: 12 }}>Paste Items</Button>
               <Button variant="secondary" onClick={onAddItem} style={{ padding: '4px 12px', fontSize: 12 }}>+ Item</Button>
               <Button variant="danger" onClick={onDeleteSection} style={{ padding: '4px 12px', fontSize: 12 }}>Delete</Button>
             </div>
           </div>
+
+          {showPasteItems && (
+            <div style={{ marginBottom: 16, padding: 12, background: '#f8fffe', borderRadius: 8, border: `1px solid ${colors.teal}` }}>
+              <textarea
+                value={pasteItemsText}
+                onChange={(e) => setPasteItemsText(e.target.value)}
+                rows={6}
+                placeholder={`Paste bullet points here, one per line:\n* First item content\n* Second item content\n* Third item content`}
+                style={{
+                  width: '100%', padding: 8, borderRadius: 6, border: `1px solid #ddd`,
+                  fontSize: 14, lineHeight: 1.6, resize: 'vertical', outline: 'none',
+                  fontFamily: fonts.body,
+                }}
+                autoFocus
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                <span style={{ color: colors.lightGrey, fontSize: 12 }}>
+                  Each line becomes a separate item. Bullet prefixes (*, -, •) are stripped automatically.
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button variant="secondary" onClick={() => { setShowPasteItems(false); setPasteItemsText(''); }}
+                    style={{ padding: '4px 12px', fontSize: 12 }}>Cancel</Button>
+                  <Button onClick={handlePasteItems} style={{ padding: '4px 12px', fontSize: 12 }}>Add All</Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {section.items.map((item) => (
             <div key={item.id} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
